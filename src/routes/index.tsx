@@ -87,7 +87,7 @@ function Hero() {
 
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <a
-            href="https://discord.gg/"
+            href="https://discord.gg/obj1st"
             className="group inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
           >
             <DiscordIcon className="h-4 w-4" />
@@ -375,7 +375,7 @@ function Recruitment() {
               just a working mic, a willingness to learn, and respect for the people you play with.
             </p>
             <a
-              href="https://discord.gg/"
+              href="https://discord.gg/obj1st"
               className="mt-8 inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
             >
               Enlist Today <span aria-hidden>→</span>
