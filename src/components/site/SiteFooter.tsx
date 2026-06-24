@@ -49,23 +49,26 @@ export function SiteFooter() {
             <FooterLink to="/">Contact Command</FooterLink>
           </FooterCol>
 
-          <FooterCol title="Server Status">
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-muted-foreground">EU MAIN</span>
-              <span className="ml-auto text-khaki">92/100</span>
-            </div>
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="text-muted-foreground">EU TRAINING</span>
-              <span className="ml-auto text-khaki">48/100</span>
-            </div>
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <span className="text-muted-foreground">NA SCRIM</span>
-              <span className="ml-auto text-khaki">47/100</span>
-            </div>
+          <FooterCol title="Server Status · Live">
+            {liveServers.length === 0 ? (
+              <div className="font-mono text-xs text-muted-foreground">Loading server data…</div>
+            ) : (
+              liveServers.map((s) => {
+                const online = s.status === "online";
+                return (
+                  <div key={s.id} className="flex items-center gap-2 font-mono text-xs">
+                    <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    <span className="truncate text-muted-foreground">{s.country} · {s.map}</span>
+                    <span className="ml-auto text-khaki">{s.players}/{s.maxPlayers}</span>
+                  </div>
+                );
+              })
+            )}
+            <a href="https://www.battlemetrics.com/servers/hll/38460828" target="_blank" rel="noreferrer" className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-khaki">
+              View on BattleMetrics →
+            </a>
           </FooterCol>
+
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t hairline pt-6 md:flex-row md:items-center">
