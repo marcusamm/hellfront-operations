@@ -235,7 +235,8 @@ function Operations() {
     { d: "JUL 20", t: "Campaign: Bocage", type: "Campaign", who: "3-night operation", time: "20:00 UTC" },
   ];
   return (
-    <section className="relative border-b hairline">
+    <section id="operations" className="relative border-b hairline">
+
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader
           index="03"
