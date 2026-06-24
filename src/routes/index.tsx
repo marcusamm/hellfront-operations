@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import heroImg from "@/assets/hero-battlefield.jpg";
 import infantryImg from "@/assets/gallery-infantry.jpg";
 import tankImg from "@/assets/gallery-tank.jpg";
@@ -6,6 +7,15 @@ import airborneImg from "@/assets/gallery-airborne.jpg";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { getServers } from "@/lib/battlemetrics.functions";
+
+const SERVER_IDS = ["38460828"];
+
+const serversQueryOptions = queryOptions({
+  queryKey: ["battlemetrics", "servers", SERVER_IDS],
+  queryFn: () => getServers({ data: { ids: SERVER_IDS } }),
+  staleTime: 60_000,
+});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,8 +28,10 @@ export const Route = createFileRoute("/")({
       { name: "twitter:image", content: heroImg },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(serversQueryOptions),
   component: Index,
 });
+
 
 function Index() {
   return (
@@ -178,41 +190,74 @@ function WhyJoin() {
 }
 
 function Servers() {
-  const servers = [
-    { name: "OF | EU MAIN — Warfare", region: "EU", pop: "92/100", map: "FOY · Warfare", status: "online" },
-    { name: "OF | EU TRAINING — Skirmish", region: "EU", pop: "48/100", map: "HÜRTGEN · Skirmish", status: "online" },
-    { name: "OF | NA SCRIM — Offensive", region: "NA", pop: "47/100", map: "OMAHA · Offensive", status: "warming" },
-  ];
+  const { data } = useSuspenseQuery(serversQueryOptions);
+  const servers = data.servers;
   return (
     <section id="servers" className="relative border-b hairline bg-card/20">
       <div className="mx-auto max-w-7xl px-5 py-24">
-        <SectionHeader index="02" eyebrow="ACTIVE SERVERS" title="Dedicated. Populated. Ours." />
-        <div className="grid gap-px border hairline bg-border/40 lg:grid-cols-3">
-          {servers.map((s) => (
-            <div key={s.name} className="relative bg-card p-7">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">{s.region} REGION</span>
-                <div className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${s.status === "online" ? "bg-emerald-500" : "bg-amber-500"}`} />
-                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {s.status}
-                  </span>
+        <SectionHeader
+          index="02"
+          eyebrow="ACTIVE SERVERS · LIVE"
+          title="Dedicated. Populated. Ours."
+          sub="Live population pulled directly from BattleMetrics. Refreshed every minute."
+        />
+        {servers.length === 0 ? (
+          <div className="border hairline bg-card p-10 text-center font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
+            Server data temporarily unavailable · Try again shortly
+          </div>
+        ) : (
+          <div className={`grid gap-px border hairline bg-border/40 ${servers.length > 1 ? "lg:grid-cols-3" : ""}`}>
+            {servers.map((s) => {
+              const online = s.status === "online";
+              const battlemetricsUrl = `https://www.battlemetrics.com/servers/hll/${s.id}`;
+              return (
+                <div key={s.id} className="relative bg-card p-7">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                      {s.country} · OFFICIAL
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-amber-500"}`} />
+                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                        {s.status}
+                      </span>
+                    </div>
+                  </div>
+                  <h3 className="mt-4 text-lg text-foreground line-clamp-2">{s.name}</h3>
+
+                  <div className="mt-5 space-y-3 border-t hairline pt-4">
+                    <Row label="Population" value={`${s.players}/${s.maxPlayers}`} highlight />
+                    <Row label="Current Map" value={s.map} />
+                    {s.rank != null && <Row label="Global Rank" value={`#${s.rank}`} />}
+                  </div>
+
+                  {/* Population bar */}
+                  <div className="mt-5">
+                    <div className="h-1.5 w-full overflow-hidden bg-border/60">
+                      <div
+                        className="h-full bg-khaki transition-all"
+                        style={{ width: `${Math.min(100, Math.round((s.players / Math.max(1, s.maxPlayers)) * 100))}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 flex justify-between font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+                      <span>0</span>
+                      <span>{s.maxPlayers}</span>
+                    </div>
+                  </div>
+
+                  <a
+                    href={battlemetricsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-6 inline-flex w-full items-center justify-center border border-khaki/70 bg-transparent py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
+                  >
+                    View on BattleMetrics →
+                  </a>
                 </div>
-              </div>
-              <h3 className="mt-4 text-lg text-foreground">{s.name}</h3>
-
-              <div className="mt-5 space-y-3 border-t hairline pt-4">
-                <Row label="Population" value={s.pop} highlight />
-                <Row label="Current Map" value={s.map} />
-                <Row label="Tickrate" value="60Hz" />
-              </div>
-
-              <button className="mt-6 w-full border border-khaki/70 bg-transparent py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background">
-                Quick Connect →
-              </button>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -226,6 +271,7 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
     </div>
   );
 }
+
 
 function Operations() {
   const ops = [

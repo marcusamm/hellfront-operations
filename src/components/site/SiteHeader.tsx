@@ -1,5 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { getServers } from "@/lib/battlemetrics.functions";
+
+const HEADER_SERVER_IDS = ["38460828"];
+
 
 type NavItem = { to: string; label: string; hash?: string; badge?: "NEW" };
 
@@ -99,17 +104,32 @@ export function SiteHeader() {
 }
 
 export function ServerStatusPill() {
+  const { data } = useQuery({
+    queryKey: ["battlemetrics", "servers", HEADER_SERVER_IDS],
+    queryFn: () => getServers({ data: { ids: HEADER_SERVER_IDS } }),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+  const s = data?.servers[0];
+  const online = s ? s.status === "online" : false;
+  const dotColor = !s ? "bg-muted-foreground" : online ? "bg-emerald-500" : "bg-amber-500";
+  const label = !s ? "Loading…" : online ? "Server Online" : s.status.toUpperCase();
+  const count = s ? `${s.players}/${s.maxPlayers}` : "—/—";
   return (
-    <div className="flex items-center gap-2 border hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+    <a
+      href="#servers"
+      className="flex items-center gap-2 border hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:text-khaki"
+    >
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/70 opacity-75" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+        {online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/70 opacity-75" />}
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${dotColor}`} />
       </span>
-      <span>Servers Online</span>
-      <span className="text-khaki">187/200</span>
-    </div>
+      <span>{label}</span>
+      <span className="text-khaki">{count}</span>
+    </a>
   );
 }
+
 
 export function MobileStickyCTA() {
   return (
