@@ -103,7 +103,7 @@ function Hero() {
 
         <div className="mt-16 grid max-w-3xl grid-cols-2 gap-px border hairline bg-border/40 sm:grid-cols-4">
           {[
-            ["07", "Years Active"],
+            ["2026", "Founded"],
             ["3", "Dedicated Servers"],
             ["12+", "Ops Per Month"],
             ["24/7", "Command Online"],
@@ -125,7 +125,7 @@ function Stats() {
     { v: "8,420", l: "Discord Members" },
     { v: "14", l: "Monthly Operations" },
     { v: "187", l: "Avg Server Pop" },
-    { v: "7yr", l: "Years Active" },
+    { v: "2026", l: "Founded" },
   ];
   return (
     <section className="border-b hairline bg-card/30">
