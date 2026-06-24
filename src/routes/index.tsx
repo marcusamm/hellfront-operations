@@ -279,7 +279,8 @@ function Gallery() {
     { src: commandImg, label: "COMMAND POST", span: "md:col-span-2" },
   ];
   return (
-    <section id="servers" className="relative border-b hairline bg-card/20">
+    <section className="relative border-b hairline bg-card/20">
+
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader index="04" eyebrow="FIELD ARCHIVE" title="From the front lines" />
         <div className="grid auto-rows-[200px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-4">
@@ -308,7 +309,7 @@ function Gallery() {
 
 function Recruitment() {
   return (
-    <section className="relative isolate border-b hairline overflow-hidden">
+    <section id="recruitment" className="relative isolate border-b hairline overflow-hidden">
       <img src={commandImg} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-20" />
       <div className="absolute inset-0 bg-background/80" />
       <div className="absolute inset-0 grid-tactical opacity-40" />
