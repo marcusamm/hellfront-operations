@@ -94,7 +94,8 @@ function Hero() {
             Join Discord
           </a>
           <Link
-            to="/servers"
+            to="/"
+            hash="servers"
             className="inline-flex items-center gap-3 border-2 border-foreground/30 bg-transparent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-foreground transition-colors hover:border-khaki hover:text-khaki"
           >
             View Servers →
