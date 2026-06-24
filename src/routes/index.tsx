@@ -184,7 +184,7 @@ function Servers() {
     { name: "OF | NA SCRIM — Offensive", region: "NA", pop: "47/100", map: "OMAHA · Offensive", status: "warming" },
   ];
   return (
-    <section className="relative border-b hairline bg-card/20">
+    <section id="servers" className="relative border-b hairline bg-card/20">
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader index="02" eyebrow="ACTIVE SERVERS" title="Dedicated. Populated. Ours." />
         <div className="grid gap-px border hairline bg-border/40 lg:grid-cols-3">
@@ -279,7 +279,7 @@ function Gallery() {
     { src: commandImg, label: "COMMAND POST", span: "md:col-span-2" },
   ];
   return (
-    <section className="relative border-b hairline bg-card/20">
+    <section id="servers" className="relative border-b hairline bg-card/20">
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader index="04" eyebrow="FIELD ARCHIVE" title="From the front lines" />
         <div className="grid auto-rows-[200px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-4">
