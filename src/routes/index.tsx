@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import heroImg from "@/assets/hero-battlefield.jpg";
-import infantryImg from "@/assets/gallery-infantry.jpg";
-import tankImg from "@/assets/gallery-tank.jpg";
-import airborneImg from "@/assets/gallery-airborne.jpg";
+import frontline1 from "@/assets/frontline-1.png.asset.json";
+import frontline2 from "@/assets/frontline-2.png.asset.json";
+import frontline3 from "@/assets/frontline-3.jpg.asset.json";
+import frontline4 from "@/assets/frontline-4.jpg.asset.json";
+import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -320,10 +322,11 @@ function Operations() {
 
 function Gallery() {
   const tiles = [
-    { src: infantryImg, label: "INFANTRY OPS", span: "md:col-span-2 md:row-span-2" },
-    { src: tankImg, label: "TANK CREWS" },
-    { src: airborneImg, label: "AIRBORNE" },
-    { src: commandImg, label: "COMMAND POST", span: "md:col-span-2" },
+    { src: frontline1.url, label: "FOREST PATROL", span: "md:col-span-2 md:row-span-2" },
+    { src: frontline2.url, label: "TRENCH LINE" },
+    { src: frontline3.url, label: "VILLAGE ASSAULT" },
+    { src: frontline4.url, label: "PLACING OUTPOST", span: "md:col-span-2" },
+    { src: frontline5.url, label: "ARMORED RECON", span: "md:col-span-2" },
   ];
   return (
     <section className="relative border-b hairline bg-card/20">
