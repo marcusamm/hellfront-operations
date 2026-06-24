@@ -7,7 +7,15 @@ const FOOTER_SERVER_IDS = ["38460828"];
 
 
 export function SiteFooter() {
+  const { data } = useQuery({
+    queryKey: ["battlemetrics", "servers", FOOTER_SERVER_IDS],
+    queryFn: () => getServers({ data: { ids: FOOTER_SERVER_IDS } }),
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+  const liveServers = data?.servers ?? [];
   return (
+
     <footer className="relative border-t hairline bg-card/40">
       <div className="grid-tactical absolute inset-0 opacity-40" />
       <div className="relative mx-auto max-w-7xl px-5 py-14">
