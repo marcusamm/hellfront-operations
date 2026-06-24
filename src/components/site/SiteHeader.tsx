@@ -104,13 +104,15 @@ export function SiteHeader() {
 }
 
 export function ServerStatusPill() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { data } = useQuery({
     queryKey: ["battlemetrics", "servers", HEADER_SERVER_IDS],
     queryFn: () => getServers({ data: { ids: HEADER_SERVER_IDS } }),
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
-  const s = data?.servers[0];
+  const s = mounted ? data?.servers[0] : undefined;
   const online = s ? s.status === "online" : false;
   const dotColor = !s ? "bg-muted-foreground" : online ? "bg-emerald-500" : "bg-amber-500";
   const label = !s ? "Loading…" : online ? "Server Online" : s.status.toUpperCase();
