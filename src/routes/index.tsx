@@ -322,10 +322,11 @@ function Operations() {
 
 function Gallery() {
   const tiles = [
-    { src: infantryImg, label: "INFANTRY OPS", span: "md:col-span-2 md:row-span-2" },
-    { src: tankImg, label: "TANK CREWS" },
-    { src: airborneImg, label: "AIRBORNE" },
-    { src: commandImg, label: "COMMAND POST", span: "md:col-span-2" },
+    { src: frontline1.url, label: "FOREST PATROL", span: "md:col-span-2 md:row-span-2" },
+    { src: frontline2.url, label: "TRENCH LINE" },
+    { src: frontline3.url, label: "VILLAGE ASSAULT" },
+    { src: frontline4.url, label: "PLACING OUTPOST", span: "md:col-span-2" },
+    { src: frontline5.url, label: "ARMORED RECON", span: "md:col-span-2" },
   ];
   return (
     <section className="relative border-b hairline bg-card/20">
