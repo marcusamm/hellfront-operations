@@ -42,7 +42,7 @@ function SLB() {
             and league-style matches against the strongest clans in HLL.
           </p>
           <div className="mt-9 flex flex-wrap gap-4">
-            <a href="https://discord.gg/" className="inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki">
+            <a href="https://discord.gg/yfr7j4WQKe" className="inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki">
               <DiscordIcon className="h-4 w-4" />
               Apply to Roster
             </a>

@@ -27,7 +27,7 @@ export function SiteFooter() {
               </div>
               <div>
                 <div className="stencil text-base">Objective First</div>
-                <div className="eyebrow text-[10px] mt-0.5">EST. 2019</div>
+                <div className="eyebrow text-[10px] mt-0.5">EST. 2026</div>
               </div>
             </div>
             <p className="mt-5 max-w-xs text-sm text-muted-foreground">
@@ -43,7 +43,7 @@ export function SiteFooter() {
           </FooterCol>
 
           <FooterCol title="Community">
-            <FooterLink href="https://discord.gg/" external>Discord</FooterLink>
+            <FooterLink href="https://discord.gg/obj1st" external>Discord</FooterLink>
             <FooterLink href="https://steamcommunity.com/" external>Steam Group</FooterLink>
             <FooterLink to="/">Code of Conduct</FooterLink>
             <FooterLink to="/">Contact Command</FooterLink>
@@ -76,7 +76,7 @@ export function SiteFooter() {
             © {new Date().getFullYear()} Objective First · All ranks reserved
           </p>
           <div className="flex items-center gap-3">
-            <a href="https://discord.gg/" aria-label="Discord" className="border hairline p-2 text-muted-foreground transition-colors hover:text-khaki">
+            <a href="https://discord.gg/obj1st" aria-label="Discord" className="border hairline p-2 text-muted-foreground transition-colors hover:text-khaki">
               <DiscordIcon className="h-4 w-4" />
             </a>
             <a href="https://steamcommunity.com/" aria-label="Steam" className="border hairline p-2 text-muted-foreground transition-colors hover:text-khaki">

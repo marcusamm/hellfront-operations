@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getServers } from "@/lib/battlemetrics.functions";
 
 const HEADER_SERVER_IDS = ["38460828"];
@@ -53,7 +53,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-3 md:flex">
           <ServerStatusPill />
           <a
-            href="https://discord.gg/"
+            href="https://discord.gg/obj1st"
             className="group inline-flex items-center gap-2 border-2 border-khaki bg-khaki px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
           >
             <DiscordIcon className="h-3.5 w-3.5" />
@@ -90,7 +90,7 @@ export function SiteHeader() {
               </Link>
             ))}
             <a
-              href="https://discord.gg/"
+              href="https://discord.gg/obj1st"
               className="mt-4 inline-flex items-center justify-center gap-2 border-2 border-khaki bg-khaki px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background"
             >
               <DiscordIcon className="h-3.5 w-3.5" />
@@ -104,13 +104,15 @@ export function SiteHeader() {
 }
 
 export function ServerStatusPill() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const { data } = useQuery({
     queryKey: ["battlemetrics", "servers", HEADER_SERVER_IDS],
     queryFn: () => getServers({ data: { ids: HEADER_SERVER_IDS } }),
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
-  const s = data?.servers[0];
+  const s = mounted ? data?.servers[0] : undefined;
   const online = s ? s.status === "online" : false;
   const dotColor = !s ? "bg-muted-foreground" : online ? "bg-emerald-500" : "bg-amber-500";
   const label = !s ? "Loading…" : online ? "Server Online" : s.status.toUpperCase();
@@ -135,7 +137,7 @@ export function MobileStickyCTA() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t hairline bg-background/95 backdrop-blur md:hidden">
       <a
-        href="https://discord.gg/"
+        href="https://discord.gg/obj1st"
         className="flex items-center justify-center gap-2 bg-khaki py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background"
       >
         <DiscordIcon className="h-4 w-4" />

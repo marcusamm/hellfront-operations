@@ -87,14 +87,15 @@ function Hero() {
 
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <a
-            href="https://discord.gg/"
+            href="https://discord.gg/obj1st"
             className="group inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
           >
             <DiscordIcon className="h-4 w-4" />
             Join Discord
           </a>
           <Link
-            to="/servers"
+            to="/"
+            hash="servers"
             className="inline-flex items-center gap-3 border-2 border-foreground/30 bg-transparent px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-foreground transition-colors hover:border-khaki hover:text-khaki"
           >
             View Servers →
@@ -103,7 +104,7 @@ function Hero() {
 
         <div className="mt-16 grid max-w-3xl grid-cols-2 gap-px border hairline bg-border/40 sm:grid-cols-4">
           {[
-            ["07", "Years Active"],
+            ["2026", "Founded"],
             ["3", "Dedicated Servers"],
             ["12+", "Ops Per Month"],
             ["24/7", "Command Online"],
@@ -125,7 +126,7 @@ function Stats() {
     { v: "8,420", l: "Discord Members" },
     { v: "14", l: "Monthly Operations" },
     { v: "187", l: "Avg Server Pop" },
-    { v: "7yr", l: "Years Active" },
+    { v: "2026", l: "Founded" },
   ];
   return (
     <section className="border-b hairline bg-card/30">
@@ -375,7 +376,7 @@ function Recruitment() {
               just a working mic, a willingness to learn, and respect for the people you play with.
             </p>
             <a
-              href="https://discord.gg/"
+              href="https://discord.gg/obj1st"
               className="mt-8 inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
             >
               Enlist Today <span aria-hidden>→</span>
