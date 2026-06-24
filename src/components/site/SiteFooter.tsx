@@ -1,5 +1,10 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { DiscordIcon, SteamIcon } from "./SiteHeader";
+import { getServers } from "@/lib/battlemetrics.functions";
+
+const FOOTER_SERVER_IDS = ["38460828"];
+
 
 export function SiteFooter() {
   return (
