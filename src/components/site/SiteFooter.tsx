@@ -23,10 +23,10 @@ export function SiteFooter() {
           </div>
 
           <FooterCol title="Operations">
-            <FooterLink to="/servers">Servers</FooterLink>
-            <FooterLink to="/operations">Operations</FooterLink>
+            <FooterLink to="/" hash="servers">Servers</FooterLink>
+            <FooterLink to="/" hash="operations">Operations</FooterLink>
             <FooterLink to="/slb">SLB · Squad Line Battle</FooterLink>
-            <FooterLink to="/recruitment">Recruitment</FooterLink>
+            <FooterLink to="/" hash="recruitment">Recruitment</FooterLink>
           </FooterCol>
 
           <FooterCol title="Community">
@@ -82,10 +82,10 @@ function FooterCol({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-function FooterLink(props: { to?: string; href?: string; external?: boolean; children: React.ReactNode }) {
+function FooterLink(props: { to?: string; hash?: string; href?: string; external?: boolean; children: React.ReactNode }) {
   const cls = "text-sm text-muted-foreground transition-colors hover:text-khaki";
   if (props.href) {
     return <a href={props.href} className={cls} target={props.external ? "_blank" : undefined} rel={props.external ? "noreferrer" : undefined}>{props.children}</a>;
   }
-  return <Link to={props.to!} className={cls}>{props.children}</Link>;
+  return <Link to={props.to!} hash={props.hash} className={cls}>{props.children}</Link>;
 }

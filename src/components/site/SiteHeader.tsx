@@ -1,12 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-const NAV = [
+type NavItem = { to: string; label: string; hash?: string; badge?: "NEW" };
+
+const NAV: NavItem[] = [
   { to: "/", label: "Command" },
-  { to: "/servers", label: "Servers" },
-  { to: "/operations", label: "Operations" },
-  { to: "/slb", label: "SLB", badge: "NEW" as const },
-  { to: "/recruitment", label: "Recruitment" },
+  { to: "/", hash: "servers", label: "Servers" },
+  { to: "/", hash: "operations", label: "Operations" },
+  { to: "/slb", label: "SLB", badge: "NEW" },
+  { to: "/", hash: "recruitment", label: "Recruitment" },
 ];
 
 export function SiteHeader() {
@@ -27,8 +29,9 @@ export function SiteHeader() {
         <nav className="hidden items-center gap-7 md:flex">
           {NAV.map((item) => (
             <Link
-              key={item.to}
+              key={item.label}
               to={item.to}
+              hash={item.hash}
               className="group relative flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-khaki"
               activeProps={{ className: "!text-khaki" }}
             >
@@ -67,8 +70,9 @@ export function SiteHeader() {
           <div className="flex flex-col px-5 py-4">
             {NAV.map((item) => (
               <Link
-                key={item.to}
+                key={item.label}
                 to={item.to}
+                hash={item.hash}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2 border-b hairline py-3 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground"
               >
