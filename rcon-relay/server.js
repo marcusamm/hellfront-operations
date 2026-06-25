@@ -65,7 +65,34 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_match_players_match ON match_players(match_id);
   CREATE INDEX IF NOT EXISTS idx_matches_started ON matches(started_at);
+
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    ip TEXT,
+    method TEXT,
+    path TEXT,
+    status INTEGER,
+    body TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
+
+  CREATE TABLE IF NOT EXISTS used_nonces (
+    nonce TEXT PRIMARY KEY,
+    ts INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_used_nonces_ts ON used_nonces(ts);
 `);
+
+const insertAudit = db.prepare(
+  "INSERT INTO audit_log (ts, ip, method, path, status, body) VALUES (?, ?, ?, ?, ?, ?)"
+);
+const insertNonce = db.prepare("INSERT INTO used_nonces (nonce, ts) VALUES (?, ?)");
+const purgeNonces = db.prepare("DELETE FROM used_nonces WHERE ts < ?");
+// Periodically purge nonces older than 5 minutes.
+setInterval(() => {
+  try { purgeNonces.run(Math.floor(Date.now() / 1000) - 300); } catch {}
+}, 60_000).unref();
 
 const insertMatch = db.prepare(`
   INSERT INTO matches (map_name, started_at, allied_score, axis_score)
