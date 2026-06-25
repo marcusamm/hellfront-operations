@@ -1,6 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { getGameState, getRconPlayers, type RconPlayer } from "@/lib/rcon.functions";
+import {
+  getGameState,
+  getRconPlayers,
+  messagePlayer,
+  kickPlayer,
+  tempBanPlayer,
+  permaBanPlayer,
+  punishPlayer,
+  switchPlayerNow,
+  switchPlayerOnDeath,
+  watchPlayer,
+  addVipPlayer,
+  type RconPlayer,
+} from "@/lib/rcon.functions";
 import { HLL_MAPS, mapById, normalizeMapId, type HllMap } from "@/lib/hll-maps";
 
 const MAP_SIZE = 1000;
