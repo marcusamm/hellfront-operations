@@ -143,8 +143,21 @@ export function AuthControls({
     </span>
   );
 
+  const canRcon = user.capabilities.includes("rcon");
+
   return (
     <div className={mobile ? "flex items-center gap-2" : "flex items-center gap-2"}>
+      {canRcon && (
+        <Link
+          to="/rcon"
+          onClick={onNavigate}
+          title="RCON Console"
+          className="inline-flex items-center gap-1.5 border-2 border-rust bg-rust/10 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rust transition-colors hover:bg-rust hover:text-background"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-rust" />
+          RCON
+        </Link>
+      )}
       <Link
         to="/members"
         onClick={onNavigate}
@@ -168,6 +181,7 @@ export function AuthControls({
       </a>
     </div>
   );
+
 }
 
 export function ServerStatusPill() {
