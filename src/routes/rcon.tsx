@@ -65,15 +65,34 @@ function RconPage() {
 
       <section className="border-b hairline">
         <div className="mx-auto max-w-7xl px-5 py-10">
+          <GameStatePanel />
+        </div>
+      </section>
+
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-7xl px-5 py-10">
           <MessageBars />
+        </div>
+      </section>
+
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-7xl px-5 py-10">
+          <MapRotationPanel />
+        </div>
+      </section>
+
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-7xl px-5 py-10">
+          <PlayersPanel />
         </div>
       </section>
 
       <section>
         <div className="mx-auto max-w-7xl px-5 py-10">
-          <PlayersPanel />
+          <RawCommandPanel />
         </div>
       </section>
+
 
       <SiteFooter />
       <MobileStickyCTA />
