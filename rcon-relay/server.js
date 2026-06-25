@@ -1,14 +1,15 @@
 import Fastify from "fastify";
-import Database from "better-sqlite3";
-import net from "net";
-import crypto from "crypto";
+import { DatabaseSync } from "node:sqlite";
+import net from "node:net";
+import path from "node:path";
+import fs from "node:fs";
 
 const env = {
   HLL_RCON_HOST: process.env.HLL_RCON_HOST,
   HLL_RCON_PORT: Number(process.env.HLL_RCON_PORT || 27015),
   HLL_RCON_PASSWORD: process.env.HLL_RCON_PASSWORD,
   RELAY_TOKEN: process.env.RELAY_TOKEN,
-  DATABASE_PATH: process.env.DATABASE_PATH || "/data/relay.db",
+  DATABASE_PATH: process.env.DATABASE_PATH || "./relay.db",
   PORT: Number(process.env.PORT || 8080),
 };
 
@@ -19,8 +20,12 @@ if (!env.HLL_RCON_HOST || !env.HLL_RCON_PASSWORD || !env.RELAY_TOKEN) {
 
 // ---------------- DB ----------------
 
-const db = new Database(env.DATABASE_PATH);
-db.pragma("journal_mode = WAL");
+// Ensure the directory for the SQLite file exists (e.g. /data inside Docker).
+const dbDir = path.dirname(path.resolve(env.DATABASE_PATH));
+fs.mkdirSync(dbDir, { recursive: true });
+
+const db = new DatabaseSync(env.DATABASE_PATH);
+db.exec("PRAGMA journal_mode = WAL");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS matches (
