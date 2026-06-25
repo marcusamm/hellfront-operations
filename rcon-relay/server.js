@@ -1,14 +1,24 @@
 import Fastify from "fastify";
+import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import { DatabaseSync } from "node:sqlite";
 import net from "node:net";
 import path from "node:path";
 import fs from "node:fs";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const env = {
   HLL_RCON_HOST: process.env.HLL_RCON_HOST,
   HLL_RCON_PORT: Number(process.env.HLL_RCON_PORT || 27015),
   HLL_RCON_PASSWORD: process.env.HLL_RCON_PASSWORD,
   RELAY_TOKEN: process.env.RELAY_TOKEN,
+  // Optional HMAC signing secret. When set, every request must include
+  // x-relay-timestamp, x-relay-nonce, and x-relay-signature headers.
+  RELAY_SIGNING_SECRET: process.env.RELAY_SIGNING_SECRET || "",
+  // Comma-separated IPs / CIDR prefixes allowed to call the relay.
+  // Empty = allow any (still gated by token + signature).
+  IP_ALLOWLIST: (process.env.IP_ALLOWLIST || "").split(",").map((s) => s.trim()).filter(Boolean),
+  RATE_LIMIT_PER_MINUTE: Number(process.env.RATE_LIMIT_PER_MINUTE || 120),
   DATABASE_PATH: process.env.DATABASE_PATH || "./relay.db",
   PORT: Number(process.env.PORT || 8080),
 };
@@ -55,7 +65,34 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_match_players_match ON match_players(match_id);
   CREATE INDEX IF NOT EXISTS idx_matches_started ON matches(started_at);
+
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    ip TEXT,
+    method TEXT,
+    path TEXT,
+    status INTEGER,
+    body TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
+
+  CREATE TABLE IF NOT EXISTS used_nonces (
+    nonce TEXT PRIMARY KEY,
+    ts INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_used_nonces_ts ON used_nonces(ts);
 `);
+
+const insertAudit = db.prepare(
+  "INSERT INTO audit_log (ts, ip, method, path, status, body) VALUES (?, ?, ?, ?, ?, ?)"
+);
+const insertNonce = db.prepare("INSERT INTO used_nonces (nonce, ts) VALUES (?, ?)");
+const purgeNonces = db.prepare("DELETE FROM used_nonces WHERE ts < ?");
+// Periodically purge nonces older than 5 minutes.
+setInterval(() => {
+  try { purgeNonces.run(Math.floor(Date.now() / 1000) - 300); } catch {}
+}, 60_000).unref();
 
 const insertMatch = db.prepare(`
   INSERT INTO matches (map_name, started_at, allied_score, axis_score)
@@ -169,16 +206,119 @@ async function rconCommand(command) {
 
 // ---------------- HTTP server ----------------
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: true,
+  trustProxy: true, // we sit behind Caddy/Cloudflare
+  bodyLimit: 64 * 1024, // 64 KiB is plenty for RCON payloads
+});
+
+await app.register(helmet, {
+  contentSecurityPolicy: false, // JSON API, no HTML
+  crossOriginResourcePolicy: { policy: "same-origin" },
+});
+
+await app.register(rateLimit, {
+  max: env.RATE_LIMIT_PER_MINUTE,
+  timeWindow: "1 minute",
+  ban: 5, // after 5 rate-limit violations in window, hard 429 for the rest
+  keyGenerator: (req) => req.ip,
+});
+
+// Constant-time string compare that tolerates length differences.
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
+function ipAllowed(ip) {
+  if (env.IP_ALLOWLIST.length === 0) return true;
+  // Exact match or simple prefix (e.g. "10.0." matches "10.0.1.5").
+  return env.IP_ALLOWLIST.some((entry) => ip === entry || ip.startsWith(entry));
+}
+
+const PUBLIC_PATHS = new Set(["/health"]);
 
 app.addHook("onRequest", async (request, reply) => {
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+
+  // 1) IP allowlist
+  if (!ipAllowed(request.ip)) {
+    reply.code(403).send({ failed: true, error: "Forbidden" });
+    return reply;
+  }
+
+  // 2) Bearer token (constant-time)
   const auth = request.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (token !== env.RELAY_TOKEN) {
+  if (!env.RELAY_TOKEN || !safeEqual(token, env.RELAY_TOKEN)) {
     reply.code(401).send({ failed: true, error: "Unauthorized" });
-    return;
+    return reply;
+  }
+
+  // 3) Signature timestamp + nonce (body-independent checks here;
+  //    HMAC over body runs in preHandler once the body is parsed).
+  if (env.RELAY_SIGNING_SECRET) {
+    const ts = Number(request.headers["x-relay-timestamp"]);
+    const nonce = String(request.headers["x-relay-nonce"] || "");
+    const now = Math.floor(Date.now() / 1000);
+    if (!ts || Math.abs(now - ts) > 30) {
+      reply.code(401).send({ failed: true, error: "Stale or missing timestamp" });
+      return reply;
+    }
+    if (!nonce || nonce.length < 8 || nonce.length > 128) {
+      reply.code(401).send({ failed: true, error: "Bad nonce" });
+      return reply;
+    }
+    try {
+      insertNonce.run(nonce, now);
+    } catch {
+      reply.code(401).send({ failed: true, error: "Replay detected" });
+      return reply;
+    }
   }
 });
+
+// HMAC body verification — runs after Fastify parses JSON.
+app.addHook("preHandler", async (request, reply) => {
+  if (!env.RELAY_SIGNING_SECRET) return;
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+  const ts = Number(request.headers["x-relay-timestamp"]);
+  const nonce = String(request.headers["x-relay-nonce"] || "");
+  const sig = String(request.headers["x-relay-signature"] || "");
+  const rawBody = request.body
+    ? (typeof request.body === "string" ? request.body : JSON.stringify(request.body))
+    : "";
+  const expected = createHmac("sha256", env.RELAY_SIGNING_SECRET)
+    .update(`${ts}\n${nonce}\n${request.method}\n${request.url}\n${rawBody}`)
+    .digest("hex");
+  if (!safeEqual(sig, expected)) {
+    reply.code(401).send({ failed: true, error: "Bad signature" });
+    return reply;
+  }
+});
+
+// Audit every authed request after the response is sent.
+app.addHook("onResponse", async (request, reply) => {
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+  try {
+    const body = request.body
+      ? JSON.stringify(request.body).slice(0, 2000)
+      : null;
+    insertAudit.run(
+      Math.floor(Date.now() / 1000),
+      request.ip,
+      request.method,
+      request.url,
+      reply.statusCode,
+      body,
+    );
+  } catch (err) {
+    request.log.warn({ err }, "audit log write failed");
+  }
+});
+
 
 function crcONResponse(result) {
   return { result, failed: false };

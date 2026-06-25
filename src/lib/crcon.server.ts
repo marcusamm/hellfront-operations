@@ -82,9 +82,32 @@ async function login(): Promise<boolean> {
   }
 }
 
-function authHeaders(): Record<string, string> {
+function authHeaders(
+  method: "GET" | "POST",
+  path: string,
+  body: string,
+): Record<string, string> {
   if (useRelay()) {
-    return { Authorization: `Bearer ${env("RCON_RELAY_TOKEN") ?? ""}` };
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${env("RCON_RELAY_TOKEN") ?? ""}`,
+    };
+    // If a signing secret is configured on both sides, sign the request
+    // with HMAC-SHA256 over (ts \n nonce \n method \n path \n body).
+    // The relay rejects requests >30s old or with a reused nonce.
+    const secret = env("RCON_RELAY_SIGNING_SECRET");
+    if (secret) {
+      // Lazy load so this never ships to the browser bundle.
+      const { createHmac, randomBytes } = require("node:crypto") as typeof import("node:crypto");
+      const ts = Math.floor(Date.now() / 1000).toString();
+      const nonce = randomBytes(16).toString("hex");
+      const sig = createHmac("sha256", secret)
+        .update(`${ts}\n${nonce}\n${method}\n${path}\n${body}`)
+        .digest("hex");
+      headers["x-relay-timestamp"] = ts;
+      headers["x-relay-nonce"] = nonce;
+      headers["x-relay-signature"] = sig;
+    }
+    return headers;
   }
   return { Cookie: sessionCookie as string };
 }
@@ -97,7 +120,7 @@ async function apiGet(path: string): Promise<unknown | null> {
 
   const doFetch = () =>
     fetch(`${base}${path}`, {
-      headers: { ...authHeaders(), Accept: "application/json" },
+      headers: { ...authHeaders("GET", path, ""), Accept: "application/json" },
     });
 
   let res = await doFetch().catch((e) => {
@@ -135,15 +158,16 @@ export async function apiPost(path: string, body: unknown): Promise<unknown | nu
   if (!useRelay() && !sessionCookie && !(await login())) return null;
   if (useRelay() && !(await login())) return null;
 
+  const bodyStr = JSON.stringify(body ?? {});
   const doFetch = () =>
     fetch(`${base}${path}`, {
       method: "POST",
       headers: {
-        ...authHeaders(),
+        ...authHeaders("POST", path, bodyStr),
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body ?? {}),
+      body: bodyStr,
     });
 
   let res = await doFetch().catch(() => null);

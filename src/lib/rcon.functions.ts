@@ -265,6 +265,18 @@ export type RawCommandResult = {
   data?: string;
 };
 
+// Allowlist of raw paths the admin UI may invoke. Anything else is rejected
+// server-side so a compromised browser session can't reach arbitrary RCON
+// commands (e.g. server shutdown, banning random IDs, etc.).
+const RAW_COMMAND_ALLOWLIST = new Set<string>([
+  "/api/get_public_info",
+  "/api/get_detailed_players",
+  "/api/get_gamestate",
+  "/api/get_map_rotation",
+  "/api/get_scoreboard_maps",
+  "/api/get_map_scoreboard",
+]);
+
 export const runRawCommand = createServerFn({ method: "POST" })
   .inputValidator(
     (d: { path: string; method?: "GET" | "POST"; body?: Record<string, unknown> }) => d,
@@ -273,6 +285,10 @@ export const runRawCommand = createServerFn({ method: "POST" })
     const denied = await requireRcon();
     if (denied) return { ok: false, message: denied };
     const path = data.path.startsWith("/") ? data.path : `/api/${data.path}`;
+    const basePath = path.split("?")[0];
+    if (!RAW_COMMAND_ALLOWLIST.has(basePath)) {
+      return { ok: false, message: `Command not allowed: ${basePath}` };
+    }
     const { apiGetRaw, apiPost } = await import("./crcon.server");
     try {
       const res =

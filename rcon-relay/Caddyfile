@@ -1,3 +1,27 @@
 rcon.yourdomain.com {
-	reverse_proxy localhost:8080
+	# Strong TLS + HSTS. Caddy auto-provisions a Let's Encrypt cert.
+	tls {
+		protocols tls1.3
+	}
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "interest-cohort=()"
+		-Server
+	}
+
+	# Block anything that isn't the JSON API.
+	@notApi {
+		not path /api/* /health
+	}
+	respond @notApi 404
+
+	reverse_proxy localhost:8080 {
+		# Forward the real client IP so the relay's IP allowlist
+		# and rate limiter see it (relay runs with trustProxy: true).
+		header_up X-Real-IP {remote_host}
+	}
 }
