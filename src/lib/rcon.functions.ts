@@ -139,3 +139,149 @@ export const setWelcomeMessage = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<RconActionResult> => {
     return runAction("/api/set_welcome_message", { message: data.message });
   });
+
+// --- extended per-player actions ------------------------------------------
+
+export const punishPlayer = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_id: string; player_name: string; reason: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/punish", {
+      player_id: data.player_id,
+      player_name: data.player_name,
+      reason: data.reason,
+      by: "ObjFirst Web",
+    });
+  });
+
+export const switchPlayerNow = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_name: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/switch_player_now", { player_name: data.player_name });
+  });
+
+export const switchPlayerOnDeath = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_name: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/switch_player_on_death", { player_name: data.player_name });
+  });
+
+export const permaBanPlayer = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_id: string; player_name: string; reason: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/perma_ban", {
+      player_id: data.player_id,
+      player_name: data.player_name,
+      reason: data.reason,
+      by: "ObjFirst Web",
+    });
+  });
+
+export const addVipPlayer = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_id: string; description: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/add_vip", {
+      player_id: data.player_id,
+      description: data.description || "VIP",
+    });
+  });
+
+// --- gamestate & map info -------------------------------------------------
+
+export type GameStateResult = {
+  status: "ok" | "forbidden" | "error";
+  message?: string;
+  current_map?: string;
+  next_map?: string;
+  allied_score?: number;
+  axis_score?: number;
+  num_allied_players?: number;
+  num_axis_players?: number;
+  time_remaining?: string;
+  raw?: Record<string, unknown>;
+};
+
+export const getGameState = createServerFn({ method: "GET" }).handler(
+  async (): Promise<GameStateResult> => {
+    const denied = await requireRcon();
+    if (denied) return { status: "forbidden", message: denied };
+    const { apiGetRaw } = await import("./crcon.server");
+    const r = (await apiGetRaw("/api/get_gamestate")) as Record<string, unknown> | null;
+    if (!r) return { status: "error", message: "CRCON did not respond" };
+    const cm = r.current_map as Record<string, unknown> | string | undefined;
+    const nm = r.next_map as Record<string, unknown> | string | undefined;
+    const mapName = (m: typeof cm) =>
+      typeof m === "string" ? m : (m?.pretty_name as string) || (m?.id as string) || "—";
+    const tr = r.raw_time_remaining ?? r.time_remaining;
+    return {
+      status: "ok",
+      current_map: mapName(cm),
+      next_map: mapName(nm),
+      allied_score: pickN(r, "allied_score"),
+      axis_score: pickN(r, "axis_score"),
+      num_allied_players: pickN(r, "num_allied_players"),
+      num_axis_players: pickN(r, "num_axis_players"),
+      time_remaining: typeof tr === "string" ? tr : tr != null ? String(tr) : undefined,
+      raw: r,
+    };
+  },
+);
+
+export type MapRotationResult = {
+  status: "ok" | "forbidden" | "error";
+  message?: string;
+  maps: { id: string; pretty_name: string }[];
+};
+
+export const getMapRotation = createServerFn({ method: "GET" }).handler(
+  async (): Promise<MapRotationResult> => {
+    const denied = await requireRcon();
+    if (denied) return { status: "forbidden", maps: [], message: denied };
+    const { apiGetRaw } = await import("./crcon.server");
+    const r = await apiGetRaw("/api/get_map_rotation");
+    if (!Array.isArray(r)) return { status: "error", maps: [], message: "No rotation" };
+    const maps = r.map((m) => {
+      if (typeof m === "string") return { id: m, pretty_name: m };
+      const o = m as Record<string, unknown>;
+      return {
+        id: (o.id as string) || (o.name as string) || "?",
+        pretty_name: (o.pretty_name as string) || (o.id as string) || "?",
+      };
+    });
+    return { status: "ok", maps };
+  },
+);
+
+export const changeMap = createServerFn({ method: "POST" })
+  .inputValidator((d: { map_name: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/set_map", { map_name: data.map_name });
+  });
+
+// --- raw command runner ---------------------------------------------------
+
+export type RawCommandResult = {
+  ok: boolean;
+  message: string;
+  data?: unknown;
+};
+
+export const runRawCommand = createServerFn({ method: "POST" })
+  .inputValidator(
+    (d: { path: string; method?: "GET" | "POST"; body?: Record<string, unknown> }) => d,
+  )
+  .handler(async ({ data }): Promise<RawCommandResult> => {
+    const denied = await requireRcon();
+    if (denied) return { ok: false, message: denied };
+    const path = data.path.startsWith("/") ? data.path : `/api/${data.path}`;
+    const { apiGetRaw, apiPost } = await import("./crcon.server");
+    try {
+      const res =
+        (data.method ?? "GET") === "POST"
+          ? await apiPost(path, data.body ?? {})
+          : await apiGetRaw(path);
+      return { ok: true, message: "ok", data: res };
+    } catch (err) {
+      return { ok: false, message: (err as Error).message };
+    }
+  });
+
