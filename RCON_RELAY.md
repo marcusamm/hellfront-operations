@@ -8,23 +8,40 @@ environment variables are set:
 | `RCON_RELAY_URL`    | HTTPS URL of your relay, e.g. `https://rcon.yourdomain.com`      |
 | `RCON_RELAY_TOKEN`  | A long random string. The site sends `Authorization: Bearer <token>` |
 
-If those are NOT set, the site falls back to CRCON (`CRCON_URL` / `CRCON_USER` / `CRCON_PASSWORD`).
-Nothing in the UI changes either way.
+If those are NOT set, the site falls back to CRCON. Nothing in the UI changes
+either way.
 
 ---
 
-## What the relay must do
+## What the relay does
 
-A tiny Node service on your VPS that:
+A small Node service on your VPS with **two jobs**:
 
-1. Opens a TCP socket to your GTX HLL server's RCON port.
-2. Implements the HLL XOR RCON handshake + command protocol.
-3. Exposes the **same HTTP API surface as CRCON** so the site doesn't care which one it's talking to.
+### 1. Live RCON proxy
+Opens a TCP socket to your GTX HLL server's RCON port, implements the HLL XOR
+RCON protocol, exposes HTTP endpoints the site calls in real time
+(kick, ban, message, map change, player list, etc).
 
-### Required HTTP endpoints
+### 2. Match-history logger (small built-in DB)
+A background worker that polls the live server every ~30s and **writes match
+results to a local SQLite (or Postgres) database**. Without this, the
+leaderboard goes empty the moment you cut over from CRCON.
+
+What to record per finished match:
+- `matches`: id, map_name, started_at, ended_at, allied_score, axis_score
+- `match_players`: match_id, player_id, player_name, team, kills, deaths,
+  combat, offense, defense, support, time_seconds
+
+That's enough to rebuild everything the current stats page shows.
+
+---
+
+## HTTP API surface
 
 All require header `Authorization: Bearer <RCON_RELAY_TOKEN>`.
 All respond with JSON shaped like CRCON: `{ "result": ..., "failed": false }`.
+
+### Live RCON (proxied to the game server)
 
 | Method | Path                                  | Purpose                            |
 | ------ | ------------------------------------- | ---------------------------------- |
@@ -32,36 +49,51 @@ All respond with JSON shaped like CRCON: `{ "result": ..., "failed": false }`.
 | GET    | `/api/get_detailed_players`           | full player list                   |
 | GET    | `/api/get_gamestate`                  | match state, score, time left      |
 | GET    | `/api/get_map_rotation`               | current rotation                   |
-| GET    | `/api/get_scoreboard_maps?limit=N`    | recent games (for stats)           |
-| GET    | `/api/get_map_scoreboard?map_id=N`    | per-player stats for one game      |
-| POST   | `/api/message_player`                 | body: `{ player_name, message }`   |
-| POST   | `/api/punish`                         | body: `{ player_name, reason }`    |
-| POST   | `/api/kick`                           | body: `{ player_name, reason }`    |
-| POST   | `/api/temp_ban`                       | body: `{ player_name, duration_hours, reason }` |
-| POST   | `/api/perma_ban`                      | body: `{ player_name, reason }`    |
-| POST   | `/api/switch_player_now`              | body: `{ player_name }`            |
-| POST   | `/api/switch_player_on_death`         | body: `{ player_name }`            |
-| POST   | `/api/add_vip`                        | body: `{ player_id, description }` |
-| POST   | `/api/set_map`                        | body: `{ map_name }`               |
+| POST   | `/api/message_player`                 | `{ player_name, message }`         |
+| POST   | `/api/punish`                         | `{ player_name, reason }`          |
+| POST   | `/api/kick`                           | `{ player_name, reason }`          |
+| POST   | `/api/temp_ban`                       | `{ player_name, duration_hours, reason }` |
+| POST   | `/api/perma_ban`                      | `{ player_name, reason }`          |
+| POST   | `/api/switch_player_now`              | `{ player_name }`                  |
+| POST   | `/api/switch_player_on_death`         | `{ player_name }`                  |
+| POST   | `/api/add_vip`                        | `{ player_id, description }`       |
+| POST   | `/api/set_map`                        | `{ map_name }`                     |
 
-Each endpoint just translates the JSON body into the corresponding HLL RCON
-text command and returns the server's reply.
+### Stats (served from the relay's own DB)
 
-### Required env vars on the relay
+| Method | Path                                  | Purpose                            |
+| ------ | ------------------------------------- | ---------------------------------- |
+| GET    | `/api/get_scoreboard_maps?limit=N`    | last N matches: `[{ id, map_name, ... }]` |
+| GET    | `/api/get_map_scoreboard?map_id=N`    | per-player stats for one match     |
+
+Response shape must mirror CRCON exactly — the site already parses both
+endpoints. Match the field names the site looks for:
+`id`, `map_id`, `player_id`, `player`, `name`, `kills`, `deaths`,
+`combat`, `offense`, `defense`, `support`, `time_seconds`.
+
+---
+
+## Required env vars on the relay
 
 ```env
 HLL_RCON_HOST=your.gtx.server.ip
-HLL_RCON_PORT=27015         # whatever GTX gave you
-HLL_RCON_PASSWORD=...       # GTX RCON password
-RELAY_TOKEN=...             # MUST match RCON_RELAY_TOKEN on the site
+HLL_RCON_PORT=27015            # whatever GTX gave you
+HLL_RCON_PASSWORD=...          # GTX RCON password
+RELAY_TOKEN=...                # MUST match RCON_RELAY_TOKEN on the site
+DATABASE_PATH=/data/relay.db   # SQLite file path (or DATABASE_URL for Postgres)
 PORT=8080
 ```
 
-### Deploy hint
+---
 
-- Put it behind Caddy or Cloudflare Tunnel for free HTTPS.
-- Use a subdomain like `rcon.yourdomain.com`.
-- Lock the firewall: only port 443 inbound public; outbound to GTX RCON port.
+## Suggested stack
+
+- **Node 20** + **Fastify** (HTTP)
+- **better-sqlite3** (zero-config, single file, plenty fast for one server)
+- A 30s `setInterval` worker that calls `Get Players` / `Get Game State`,
+  detects map changes, and writes a `matches` row on match end.
+- **Caddy** in front for free auto-HTTPS on `rcon.yourdomain.com`.
+- Single `Dockerfile`, run with `docker compose up -d`.
 
 ---
 
@@ -70,6 +102,7 @@ PORT=8080
 Once your relay is running and reachable on HTTPS:
 
 1. Add `RCON_RELAY_URL` and `RCON_RELAY_TOKEN` as secrets.
-2. Done. The site stops calling CRCON and calls your relay instead.
+2. Done. The site stops calling CRCON and calls your relay instead — live
+   RCON *and* stats.
 
-No code changes, no redeploy needed.
+No code changes, no redeploy.
