@@ -381,7 +381,9 @@ function SectorOverlay({ geo, allied, axis }: { geo: MapGeo; allied: number; axi
 function worldToPixel(x: number, y: number, b: Bounds): { px: number; py: number } {
   const nx = Math.max(0, Math.min(1, (x - b.minX) / (b.maxX - b.minX)));
   const ny = Math.max(0, Math.min(1, (y - b.minY) / (b.maxY - b.minY)));
-  return { px: nx * MAP_SIZE, py: (1 - ny) * MAP_SIZE };
+  // Image: pixel (0,0) is top-left. In HLL, +Y is south on the tac-map artwork,
+  // so higher world Y maps to a larger py (further down). No flip.
+  return { px: nx * MAP_SIZE, py: ny * MAP_SIZE };
 }
 
 function teamColor(team: string | null): string {
