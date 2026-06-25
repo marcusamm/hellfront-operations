@@ -206,16 +206,110 @@ async function rconCommand(command) {
 
 // ---------------- HTTP server ----------------
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: true,
+  trustProxy: true, // we sit behind Caddy/Cloudflare
+  bodyLimit: 64 * 1024, // 64 KiB is plenty for RCON payloads
+});
+
+await app.register(helmet, {
+  contentSecurityPolicy: false, // JSON API, no HTML
+  crossOriginResourcePolicy: { policy: "same-origin" },
+});
+
+await app.register(rateLimit, {
+  max: env.RATE_LIMIT_PER_MINUTE,
+  timeWindow: "1 minute",
+  ban: 5, // after 5 rate-limit violations in window, hard 429 for the rest
+  keyGenerator: (req) => req.ip,
+});
+
+// Constant-time string compare that tolerates length differences.
+function safeEqual(a, b) {
+  const ab = Buffer.from(String(a));
+  const bb = Buffer.from(String(b));
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
+
+function ipAllowed(ip) {
+  if (env.IP_ALLOWLIST.length === 0) return true;
+  // Exact match or simple prefix (e.g. "10.0." matches "10.0.1.5").
+  return env.IP_ALLOWLIST.some((entry) => ip === entry || ip.startsWith(entry));
+}
+
+const PUBLIC_PATHS = new Set(["/health"]);
 
 app.addHook("onRequest", async (request, reply) => {
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+
+  // 1) IP allowlist
+  if (!ipAllowed(request.ip)) {
+    reply.code(403).send({ failed: true, error: "Forbidden" });
+    return reply;
+  }
+
+  // 2) Bearer token (constant-time)
   const auth = request.headers.authorization || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (token !== env.RELAY_TOKEN) {
+  if (!env.RELAY_TOKEN || !safeEqual(token, env.RELAY_TOKEN)) {
     reply.code(401).send({ failed: true, error: "Unauthorized" });
-    return;
+    return reply;
+  }
+
+  // 3) Optional HMAC signature (replay-protected)
+  if (env.RELAY_SIGNING_SECRET) {
+    const ts = Number(request.headers["x-relay-timestamp"]);
+    const nonce = String(request.headers["x-relay-nonce"] || "");
+    const sig = String(request.headers["x-relay-signature"] || "");
+    const now = Math.floor(Date.now() / 1000);
+    if (!ts || Math.abs(now - ts) > 30) {
+      reply.code(401).send({ failed: true, error: "Stale or missing timestamp" });
+      return reply;
+    }
+    if (!nonce || nonce.length < 8 || nonce.length > 128) {
+      reply.code(401).send({ failed: true, error: "Bad nonce" });
+      return reply;
+    }
+    try {
+      insertNonce.run(nonce, now);
+    } catch {
+      reply.code(401).send({ failed: true, error: "Replay detected" });
+      return reply;
+    }
+    const rawBody = typeof request.body === "string"
+      ? request.body
+      : request.body ? JSON.stringify(request.body) : "";
+    const expected = createHmac("sha256", env.RELAY_SIGNING_SECRET)
+      .update(`${ts}\n${nonce}\n${request.method}\n${request.url}\n${rawBody}`)
+      .digest("hex");
+    if (!safeEqual(sig, expected)) {
+      reply.code(401).send({ failed: true, error: "Bad signature" });
+      return reply;
+    }
   }
 });
+
+// Audit every authed request after the response is sent.
+app.addHook("onResponse", async (request, reply) => {
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+  try {
+    const body = request.body
+      ? JSON.stringify(request.body).slice(0, 2000)
+      : null;
+    insertAudit.run(
+      Math.floor(Date.now() / 1000),
+      request.ip,
+      request.method,
+      request.url,
+      reply.statusCode,
+      body,
+    );
+  } catch (err) {
+    request.log.warn({ err }, "audit log write failed");
+  }
+});
+
 
 function crcONResponse(result) {
   return { result, failed: false };
