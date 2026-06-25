@@ -221,7 +221,7 @@ export const getGameState = createServerFn({ method: "GET" }).handler(
       num_allied_players: pickN(r, "num_allied_players"),
       num_axis_players: pickN(r, "num_axis_players"),
       time_remaining: typeof tr === "string" ? tr : tr != null ? String(tr) : undefined,
-      raw: r,
+      raw: JSON.stringify(r),
     };
   },
 );
@@ -279,7 +279,7 @@ export const runRawCommand = createServerFn({ method: "POST" })
         (data.method ?? "GET") === "POST"
           ? await apiPost(path, data.body ?? {})
           : await apiGetRaw(path);
-      return { ok: true, message: "ok", data: res };
+      return { ok: true, message: "ok", data: JSON.stringify(res, null, 2) };
     } catch (err) {
       return { ok: false, message: (err as Error).message };
     }
