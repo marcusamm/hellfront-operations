@@ -1,6 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { getGameState, getRconPlayers, type RconPlayer } from "@/lib/rcon.functions";
+import {
+  getGameState,
+  getRconPlayers,
+  messagePlayer,
+  kickPlayer,
+  tempBanPlayer,
+  permaBanPlayer,
+  punishPlayer,
+  switchPlayerNow,
+  switchPlayerOnDeath,
+  watchPlayer,
+  addVipPlayer,
+  type RconPlayer,
+} from "@/lib/rcon.functions";
 import { HLL_MAPS, mapById, normalizeMapId, type HllMap } from "@/lib/hll-maps";
 
 const MAP_SIZE = 1000;
@@ -63,6 +76,9 @@ export function LiveTacticalMap() {
   const players: RconPlayer[] = pl.data?.status === "ok" ? pl.data.players : [];
   const teams = useMemo(() => groupByTeam(players), [players]);
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? (players.find((p) => p.player_id === selectedId) ?? null) : null;
+
   const allied = gs.data?.status === "ok" ? (gs.data.allied_score ?? 0) : 0;
   const axis = gs.data?.status === "ok" ? (gs.data.axis_score ?? 0) : 0;
 
@@ -101,6 +117,8 @@ export function LiveTacticalMap() {
             players={players}
             allied={allied}
             axis={axis}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
         </div>
 
@@ -141,10 +159,28 @@ export function LiveTacticalMap() {
           </div>
         ) : (
           <div className="max-h-[60vh] overflow-y-auto p-2">
-            <TeamBlock label="Allies" tone="allied" team={teams.allies} />
-            <TeamBlock label="Axis" tone="axis" team={teams.axis} />
+            <TeamBlock
+              label="Allies"
+              tone="allied"
+              team={teams.allies}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+            <TeamBlock
+              label="Axis"
+              tone="axis"
+              team={teams.axis}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
             {teams.other.length > 0 && (
-              <TeamBlock label="Unassigned" tone="neutral" team={teams.other} />
+              <TeamBlock
+                label="Unassigned"
+                tone="neutral"
+                team={teams.other}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
             )}
             {players.length === 0 && (
               <div className="p-3 text-sm text-muted-foreground">Server is empty.</div>
@@ -152,6 +188,13 @@ export function LiveTacticalMap() {
           </div>
         )}
       </div>
+
+      {/* Selected player actions span full width below */}
+      {selected && (
+        <div className="lg:col-span-2">
+          <PlayerActionsPanel p={selected} onClose={() => setSelectedId(null)} />
+        </div>
+      )}
     </div>
   );
 }
@@ -204,12 +247,16 @@ function MapCanvas({
   players,
   allied,
   axis,
+  selectedId,
+  onSelect,
 }: {
   map: HllMap | null;
   geo: MapGeo | null;
   players: RconPlayer[];
   allied: number;
   axis: number;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }) {
   const [broken, setBroken] = useState(false);
 
@@ -232,7 +279,14 @@ function MapCanvas({
         preserveAspectRatio="none"
       >
         {geo && <SectorOverlay geo={geo} allied={allied} axis={axis} />}
-        {geo && <PlayerMarkers geo={geo} players={players} />}
+        {geo && (
+          <PlayerMarkers
+            geo={geo}
+            players={players}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        )}
       </svg>
     </div>
   );
@@ -353,7 +407,17 @@ function isLeader(role: string | null): "cmd" | "sl" | null {
   return null;
 }
 
-function PlayerMarkers({ geo, players }: { geo: MapGeo; players: RconPlayer[] }) {
+function PlayerMarkers({
+  geo,
+  players,
+  selectedId,
+  onSelect,
+}: {
+  geo: MapGeo;
+  players: RconPlayer[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const dots = players
     .filter((p) => p.x !== null && p.y !== null)
     .map((p) => {
@@ -363,23 +427,31 @@ function PlayerMarkers({ geo, players }: { geo: MapGeo; players: RconPlayer[] })
 
   return (
     <g>
-      {dots.map(({ p, px, py }) => (
-        <circle
-          key={p.player_id}
-          cx={px}
-          cy={py}
-          r={6}
-          fill={teamColor(p.team)}
-          stroke="#111"
-          strokeWidth={1.5}
-        >
-          <title>
-            {p.name}
-            {p.role ? ` · ${p.role}` : ""}
-            {p.unit_name ? ` · ${p.unit_name}` : ""}
-          </title>
-        </circle>
-      ))}
+      {dots.map(({ p, px, py }) => {
+        const isSelected = p.player_id === selectedId;
+        return (
+          <circle
+            key={p.player_id}
+            cx={px}
+            cy={py}
+            r={isSelected ? 9 : 6}
+            fill={teamColor(p.team)}
+            stroke={isSelected ? "#facc15" : "#111"}
+            strokeWidth={isSelected ? 3 : 1.5}
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(p.player_id);
+            }}
+          >
+            <title>
+              {p.name}
+              {p.role ? ` · ${p.role}` : ""}
+              {p.unit_name ? ` · ${p.unit_name}` : ""}
+            </title>
+          </circle>
+        );
+      })}
       {dots.map(({ p, px, py }) => {
         const kind = isLeader(p.role);
         if (!kind) return null;
@@ -451,10 +523,14 @@ function TeamBlock({
   label,
   tone,
   team,
+  selectedId,
+  onSelect,
 }: {
   label: string;
   tone: "allied" | "axis" | "neutral";
   team: TeamGroup | RconPlayer[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }) {
   const isFlat = Array.isArray(team);
   const count = isFlat ? team.length : team.count;
@@ -474,7 +550,14 @@ function TeamBlock({
       </div>
       <div className="divide-y hairline">
         {isFlat
-          ? team.map((p) => <PlayerLine key={p.player_id} p={p} />)
+          ? team.map((p) => (
+              <PlayerLine
+                key={p.player_id}
+                p={p}
+                selected={p.player_id === selectedId}
+                onSelect={onSelect}
+              />
+            ))
           : team.squads.map((s) => (
               <div key={s.name} className="px-3 py-2">
                 <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
@@ -482,7 +565,13 @@ function TeamBlock({
                 </div>
                 <div className="mt-1 space-y-0.5">
                   {s.players.map((p) => (
-                    <PlayerLine key={p.player_id} p={p} compact />
+                    <PlayerLine
+                      key={p.player_id}
+                      p={p}
+                      compact
+                      selected={p.player_id === selectedId}
+                      onSelect={onSelect}
+                    />
                   ))}
                 </div>
               </div>
@@ -492,10 +581,22 @@ function TeamBlock({
   );
 }
 
-function PlayerLine({ p, compact }: { p: RconPlayer; compact?: boolean }) {
+function PlayerLine({
+  p,
+  compact,
+  selected,
+  onSelect,
+}: {
+  p: RconPlayer;
+  compact?: boolean;
+  selected: boolean;
+  onSelect: (id: string | null) => void;
+}) {
   return (
-    <div
-      className={`flex items-center justify-between gap-2 ${compact ? "" : "px-3 py-1.5"} text-sm`}
+    <button
+      type="button"
+      onClick={() => onSelect(p.player_id)}
+      className={`flex w-full items-center justify-between gap-2 ${compact ? "px-1 py-0.5" : "px-3 py-1.5"} text-left text-sm transition-colors ${selected ? "bg-khaki/10 ring-1 ring-khaki" : "hover:bg-card/60"}`}
       title={`${p.name} · ${p.role ?? "—"}`}
     >
       <span className="truncate text-foreground">{p.name}</span>
@@ -505,6 +606,248 @@ function PlayerLine({ p, compact }: { p: RconPlayer; compact?: boolean }) {
           {p.kills}/{p.deaths}
         </span>
       </span>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Player actions panel — same actions as the standalone map app
+// ---------------------------------------------------------------------------
+
+type ActionKind =
+  | "message"
+  | "punish"
+  | "kick"
+  | "tban"
+  | "pban"
+  | "vip"
+  | "watch"
+  | "switch"
+  | "switchOnDeath";
+
+function PlayerActionsPanel({ p, onClose }: { p: RconPlayer; onClose: () => void }) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["live-map", "players"] });
+
+  const [open, setOpen] = useState<ActionKind | null>(null);
+  const [text, setText] = useState("");
+  const [hours, setHours] = useState(2);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const reset = () => {
+    setOpen(null);
+    setText("");
+  };
+
+  const run = useMutation({
+    mutationFn: async (): Promise<{ ok: boolean; message: string }> => {
+      switch (open) {
+        case "message":
+          return messagePlayer({
+            data: { player_id: p.player_id, player_name: p.name, message: text },
+          });
+        case "punish":
+          return punishPlayer({
+            data: { player_id: p.player_id, player_name: p.name, reason: text },
+          });
+        case "kick":
+          return kickPlayer({
+            data: { player_id: p.player_id, player_name: p.name, reason: text },
+          });
+        case "tban":
+          return tempBanPlayer({
+            data: {
+              player_id: p.player_id,
+              player_name: p.name,
+              duration_hours: hours,
+              reason: text,
+            },
+          });
+        case "pban":
+          return permaBanPlayer({
+            data: { player_id: p.player_id, player_name: p.name, reason: text },
+          });
+        case "vip":
+          return addVipPlayer({
+            data: { player_id: p.player_id, description: text || p.name },
+          });
+        case "watch":
+          return watchPlayer({
+            data: { player_id: p.player_id, player_name: p.name, reason: text || "Watch" },
+          });
+        case "switch":
+          return switchPlayerNow({ data: { player_name: p.name } });
+        case "switchOnDeath":
+          return switchPlayerOnDeath({ data: { player_name: p.name } });
+        default:
+          return { ok: false, message: "no action" };
+      }
+    },
+    onSuccess: (r) => {
+      setResult(r);
+      if (r.ok) {
+        invalidate();
+        reset();
+      }
+    },
+    onError: (err) => setResult({ ok: false, message: (err as Error).message }),
+  });
+
+  const needsText = open !== null && !["switch", "switchOnDeath", "vip"].includes(open);
+  const placeholders: Record<ActionKind, string> = {
+    message: "Message to player…",
+    punish: "Reason (kill)",
+    kick: "Reason for kick",
+    tban: "Reason for temp ban",
+    pban: "Reason for PERMA ban",
+    vip: "VIP description (optional)",
+    watch: "Why are we watching them?",
+    switch: "",
+    switchOnDeath: "",
+  };
+
+  const trigger = (k: ActionKind) => {
+    setResult(null);
+    if (k === "switch" || k === "switchOnDeath") {
+      setOpen(k);
+      setTimeout(() => run.mutate(), 0);
+      return;
+    }
+    setOpen(k);
+    setText("");
+  };
+
+  const stat = (label: string, value: string | number) => (
+    <div key={label}>
+      <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="tnum font-mono text-sm text-foreground">{value}</div>
     </div>
+  );
+
+  return (
+    <div className="mt-4 border hairline bg-card">
+      <div className="flex items-start justify-between gap-3 border-b hairline bg-background/40 px-4 py-3">
+        <div>
+          <div className="eyebrow">SELECTED PLAYER</div>
+          <div className="mt-1 font-mono text-base text-foreground">{p.name}</div>
+          <div className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            {p.team ?? "—"} · {p.role ?? "—"} · {p.unit_name ?? "—"} · lvl {p.level ?? "?"}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-rust"
+        >
+          Close ✕
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 px-4 py-3 sm:grid-cols-6">
+        {stat("Kills", p.kills)}
+        {stat("Deaths", p.deaths)}
+        {stat("K/D", p.deaths > 0 ? (p.kills / p.deaths).toFixed(2) : String(p.kills))}
+        {stat("Combat", p.combat)}
+        {stat("Offense", p.offense)}
+        {stat("Defense", p.defense)}
+        {stat("Support", p.support)}
+        {p.loadout && stat("Loadout", p.loadout)}
+      </div>
+
+      <div className="flex flex-wrap gap-1 border-t hairline bg-background/40 px-4 py-3">
+        <ActionBtn label="Msg" onClick={() => trigger("message")} />
+        <ActionBtn label="Punish" onClick={() => trigger("punish")} tone="warn" />
+        <ActionBtn label="Watch" onClick={() => trigger("watch")} />
+        <ActionBtn label="Switch" onClick={() => trigger("switch")} />
+        <ActionBtn label="SwOnDie" onClick={() => trigger("switchOnDeath")} />
+        <ActionBtn label="VIP" onClick={() => trigger("vip")} />
+        <ActionBtn label="Kick" onClick={() => trigger("kick")} tone="warn" />
+        <ActionBtn label="T-Ban" onClick={() => trigger("tban")} tone="danger" />
+        <ActionBtn label="P-Ban" onClick={() => trigger("pban")} tone="danger" />
+      </div>
+
+      {open && open !== "switch" && open !== "switchOnDeath" && (
+        <div className="flex flex-wrap items-center gap-3 border-t hairline bg-background/60 px-4 py-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-khaki">
+            {open}
+          </span>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={placeholders[open]}
+            className="flex-1 min-w-[200px] border hairline bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:border-khaki"
+          />
+          {open === "tban" && (
+            <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Hours
+              <input
+                type="number"
+                min={1}
+                max={720}
+                value={hours}
+                onChange={(e) => setHours(Number(e.target.value) || 1)}
+                className="w-20 border hairline bg-background px-2 py-1 text-right font-mono text-sm text-foreground outline-none focus:border-khaki"
+              />
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              if (needsText && !text.trim()) return;
+              run.mutate();
+            }}
+            disabled={(needsText && !text.trim()) || run.isPending}
+            className="inline-flex items-center border-2 border-khaki bg-khaki px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-background transition-colors hover:bg-transparent hover:text-khaki disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {run.isPending ? "Sending…" : "Confirm"}
+          </button>
+          <button
+            type="button"
+            onClick={reset}
+            className="inline-flex items-center border-2 border-foreground/30 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-rust hover:text-rust"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {result && (
+        <div
+          className={`border-t hairline px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] ${
+            result.ok ? "text-khaki" : "text-rust"
+          }`}
+        >
+          {result.ok ? "OK" : "Failed"} · {result.message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ActionBtn({
+  label,
+  onClick,
+  tone = "default",
+}: {
+  label: string;
+  onClick: () => void;
+  tone?: "default" | "warn" | "danger";
+}) {
+  const cls =
+    tone === "danger"
+      ? "border-rust text-rust hover:bg-rust hover:text-background"
+      : tone === "warn"
+        ? "border-khaki text-khaki hover:bg-khaki hover:text-background"
+        : "border-foreground/40 text-foreground hover:border-khaki hover:text-khaki";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center border-2 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] transition-colors ${cls}`}
+    >
+      {label}
+    </button>
   );
 }

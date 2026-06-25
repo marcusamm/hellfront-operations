@@ -16,6 +16,10 @@ export type RconPlayer = {
   x: number | null;
   y: number | null;
   z: number | null;
+  combat: number;
+  offense: number;
+  defense: number;
+  support: number;
 };
 
 export type RconPlayersResult = {
@@ -88,6 +92,10 @@ export const getRconPlayers = createServerFn({ method: "GET" }).handler(
         x: hasPos ? x : null,
         y: hasPos ? y : null,
         z: hasPos ? z : null,
+        combat: pickN(p, "combat", "combat_score"),
+        offense: pickN(p, "offense", "offense_score"),
+        defense: pickN(p, "defense", "defense_score"),
+        support: pickN(p, "support", "support_score"),
       });
     }
     rows.sort((a, b) => a.name.localeCompare(b.name));
@@ -199,6 +207,17 @@ export const addVipPlayer = createServerFn({ method: "POST" })
     return runAction("/api/add_vip", {
       player_id: data.player_id,
       description: data.description || "VIP",
+    });
+  });
+
+export const watchPlayer = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_id: string; player_name: string; reason: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/watch_player", {
+      player_id: data.player_id,
+      player_name: data.player_name,
+      reason: data.reason,
+      by: "ObjFirst Web",
     });
   });
 
