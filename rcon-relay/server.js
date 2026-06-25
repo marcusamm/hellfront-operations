@@ -257,11 +257,11 @@ app.addHook("onRequest", async (request, reply) => {
     return reply;
   }
 
-  // 3) Optional HMAC signature (replay-protected)
+  // 3) Signature timestamp + nonce (body-independent checks here;
+  //    HMAC over body runs in preHandler once the body is parsed).
   if (env.RELAY_SIGNING_SECRET) {
     const ts = Number(request.headers["x-relay-timestamp"]);
     const nonce = String(request.headers["x-relay-nonce"] || "");
-    const sig = String(request.headers["x-relay-signature"] || "");
     const now = Math.floor(Date.now() / 1000);
     if (!ts || Math.abs(now - ts) > 30) {
       reply.code(401).send({ failed: true, error: "Stale or missing timestamp" });
@@ -277,16 +277,25 @@ app.addHook("onRequest", async (request, reply) => {
       reply.code(401).send({ failed: true, error: "Replay detected" });
       return reply;
     }
-    const rawBody = typeof request.body === "string"
-      ? request.body
-      : request.body ? JSON.stringify(request.body) : "";
-    const expected = createHmac("sha256", env.RELAY_SIGNING_SECRET)
-      .update(`${ts}\n${nonce}\n${request.method}\n${request.url}\n${rawBody}`)
-      .digest("hex");
-    if (!safeEqual(sig, expected)) {
-      reply.code(401).send({ failed: true, error: "Bad signature" });
-      return reply;
-    }
+  }
+});
+
+// HMAC body verification — runs after Fastify parses JSON.
+app.addHook("preHandler", async (request, reply) => {
+  if (!env.RELAY_SIGNING_SECRET) return;
+  if (PUBLIC_PATHS.has(request.url.split("?")[0])) return;
+  const ts = Number(request.headers["x-relay-timestamp"]);
+  const nonce = String(request.headers["x-relay-nonce"] || "");
+  const sig = String(request.headers["x-relay-signature"] || "");
+  const rawBody = request.body
+    ? (typeof request.body === "string" ? request.body : JSON.stringify(request.body))
+    : "";
+  const expected = createHmac("sha256", env.RELAY_SIGNING_SECRET)
+    .update(`${ts}\n${nonce}\n${request.method}\n${request.url}\n${rawBody}`)
+    .digest("hex");
+  if (!safeEqual(sig, expected)) {
+    reply.code(401).send({ failed: true, error: "Bad signature" });
+    return reply;
   }
 });
 
