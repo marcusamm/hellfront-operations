@@ -9,7 +9,9 @@ export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(currentUserQueryOptions);
     if (!user) throw redirect({ to: "/login" });
-    if (!user.capabilities.includes("admin")) throw redirect({ to: "/members" });
+    if (!user.capabilities.includes("admin") && !user.capabilities.includes("rcon")) {
+      throw redirect({ to: "/members" });
+    }
   },
   head: () => ({ meta: [{ title: "Admin Panel — Objective First" }] }),
   component: AdminPage,
@@ -28,7 +30,7 @@ function AdminPage() {
         <div className="mx-auto max-w-7xl px-5 pt-16 pb-10">
           <div className="flex items-center gap-3">
             <span className="h-px w-12 bg-rust" />
-            <span className="eyebrow text-rust">RESTRICTED · ADMIN</span>
+            <span className="eyebrow text-rust">RESTRICTED · ADMIN &amp; MOD</span>
           </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
             <div>
