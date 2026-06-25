@@ -117,6 +117,8 @@ export function LiveTacticalMap() {
             players={players}
             allied={allied}
             axis={axis}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
         </div>
 
