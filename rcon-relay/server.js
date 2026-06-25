@@ -1,8 +1,11 @@
 import Fastify from "fastify";
+import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import { DatabaseSync } from "node:sqlite";
 import net from "node:net";
 import path from "node:path";
 import fs from "node:fs";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const env = {
   HLL_RCON_HOST: process.env.HLL_RCON_HOST,
