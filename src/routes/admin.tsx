@@ -89,13 +89,6 @@ function TabBtn({
 }
 
 function LiveMapPanel() {
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin", "live-map-url"],
-    queryFn: () => getLiveMapUrl(),
-  });
-
-  const url = data?.url ?? "";
-
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -103,52 +96,21 @@ function LiveMapPanel() {
           <div className="eyebrow">LIVE TACTICAL MAP</div>
           <h2 className="mt-1 text-2xl text-foreground">Real-time server map</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Live view of the Hell Let Loose server: current map, scoreboard, and player
-            positions polled from CRCON.
+            Current map, score, time remaining and live player roster — pulled
+            directly from CRCON. Refreshes every 5 seconds.
           </p>
         </div>
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center border-2 border-foreground/30 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-khaki hover:text-khaki"
-          >
-            Open full screen ↗
-          </a>
-        )}
       </div>
 
       <div className="mt-6">
-        {isLoading ? (
-          <div className="border hairline bg-card p-8 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            Loading map…
-          </div>
-        ) : !url ? (
-          <div className="border hairline bg-card p-6 text-sm text-muted-foreground">
-            <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-rust">
-              Live map not configured
-            </div>
-            <p className="mt-3">
-              Set the <code className="font-mono text-khaki">LIVE_MAP_URL</code> environment
-              variable to the URL where the{" "}
-              <span className="text-foreground">hell-let-loose-map</span> app is running on
-              your VPS (for example{" "}
-              <code className="font-mono text-khaki">https://map.yourdomain.com</code> or{" "}
-              <code className="font-mono text-khaki">http://your-vps-ip:5000</code>).
-            </p>
-          </div>
-        ) : (
-          <div className="border hairline bg-card overflow-hidden">
-            <iframe
-              src={url}
-              title="Hell Let Loose Live Map"
-              className="block h-[80vh] w-full border-0 bg-background"
-              allow="fullscreen"
-            />
-          </div>
-        )}
+        <LiveTacticalMap />
       </div>
+
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+        Tip: drop tactical artwork (e.g. <code className="text-khaki">tac_carentan.webp</code>)
+        into <code className="text-khaki">/public/maps/</code> to replace the placeholder
+        for any map.
+      </p>
     </div>
   );
 }
