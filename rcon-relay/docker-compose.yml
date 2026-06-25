@@ -4,9 +4,19 @@ services:
     container_name: rcon-relay
     restart: unless-stopped
     env_file: .env
+    # Hardening: read-only root FS, no new privileges, drop all caps,
+    # only /data (volume) and /tmp are writable.
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
     volumes:
       - ./data:/data
     ports:
+      # Bind to loopback only — Caddy handles TLS termination on 443.
       - "127.0.0.1:8080:8080"
 
   caddy:
