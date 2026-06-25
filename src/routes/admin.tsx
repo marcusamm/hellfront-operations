@@ -9,7 +9,9 @@ export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(currentUserQueryOptions);
     if (!user) throw redirect({ to: "/login" });
-    if (!user.capabilities.includes("admin")) throw redirect({ to: "/members" });
+    if (!user.capabilities.includes("admin") && !user.capabilities.includes("rcon")) {
+      throw redirect({ to: "/members" });
+    }
   },
   head: () => ({ meta: [{ title: "Admin Panel — Objective First" }] }),
   component: AdminPage,
