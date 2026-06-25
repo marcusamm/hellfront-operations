@@ -197,7 +197,7 @@ export type GameStateResult = {
   num_allied_players?: number;
   num_axis_players?: number;
   time_remaining?: string;
-  raw?: unknown;
+  raw?: string;
 };
 
 export const getGameState = createServerFn({ method: "GET" }).handler(
