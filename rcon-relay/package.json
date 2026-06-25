@@ -1,6 +1,6 @@
 {
   "name": "rcon-relay",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,6 +11,8 @@
     "setup": "powershell -ExecutionPolicy Bypass -File ./setup.ps1"
   },
   "dependencies": {
-    "fastify": "^5.2.1"
+    "fastify": "^5.2.1",
+    "@fastify/rate-limit": "^10.2.1",
+    "@fastify/helmet": "^13.0.1"
   }
 }
