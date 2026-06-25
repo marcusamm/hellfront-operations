@@ -92,6 +92,10 @@ export const getRconPlayers = createServerFn({ method: "GET" }).handler(
         x: hasPos ? x : null,
         y: hasPos ? y : null,
         z: hasPos ? z : null,
+        combat: pickN(p, "combat", "combat_score"),
+        offense: pickN(p, "offense", "offense_score"),
+        defense: pickN(p, "defense", "defense_score"),
+        support: pickN(p, "support", "support_score"),
       });
     }
     rows.sort((a, b) => a.name.localeCompare(b.name));
