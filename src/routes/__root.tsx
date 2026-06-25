@@ -88,6 +88,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Objective First — Elite Hell Let Loose Community" },
+      { name: "description", content: "Join Objective First for casual Hell Let Loose gameplay with voice chat, teamwork, and community. All experience levels welcome for fun and camaraderie." },
+      { property: "og:description", content: "Join Objective First for casual Hell Let Loose gameplay with voice chat, teamwork, and community. All experience levels welcome for fun and camaraderie." },
+      { name: "twitter:description", content: "Join Objective First for casual Hell Let Loose gameplay with voice chat, teamwork, and community. All experience levels welcome for fun and camaraderie." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/99000817-dda5-4cb3-96d2-7d0af8afc186" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/99000817-dda5-4cb3-96d2-7d0af8afc186" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
