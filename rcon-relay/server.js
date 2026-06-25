@@ -370,7 +370,7 @@ async function pollMatch() {
       }
       // Start new match
       const result = insertMatch.run(mapName, now, gs.allied_score, gs.axis_score);
-      currentMatchId = result.lastInsertRowid;
+      currentMatchId = Number(result.lastInsertRowid);
       currentMapName = mapName;
 
       // Insert current players as initial snapshot
