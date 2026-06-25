@@ -9,31 +9,49 @@ import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { getServers } from "@/lib/battlemetrics.functions";
+import { getServerStatus } from "@/lib/server-status.functions";
+import { getGuildStats } from "@/lib/discord.functions";
 
-const SERVER_IDS = ["38460828"];
-
-const serversQueryOptions = queryOptions({
-  queryKey: ["battlemetrics", "servers", SERVER_IDS],
-  queryFn: () => getServers({ data: { ids: SERVER_IDS } }),
+const serverStatusQueryOptions = queryOptions({
+  queryKey: ["crcon", "serverStatus"],
+  queryFn: () => getServerStatus(),
   staleTime: 60_000,
+  refetchInterval: 60_000,
+});
+
+const guildStatsQueryOptions = queryOptions({
+  queryKey: ["discord", "guildStats"],
+  queryFn: () => getGuildStats(),
+  staleTime: 60_000,
+  refetchInterval: 60_000,
 });
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Objective First — Elite Hell Let Loose Community" },
-      { name: "description", content: "Join one of the most organized Hell Let Loose communities. Active leadership, structured teamwork, competitive operations, and dedicated servers." },
+      {
+        name: "description",
+        content:
+          "Join one of the most organized Hell Let Loose communities. Active leadership, structured teamwork, competitive operations, and dedicated servers.",
+      },
       { property: "og:title", content: "Objective First — Elite Hell Let Loose Community" },
-      { property: "og:description", content: "Organized teamwork, active leadership, and competitive Hell Let Loose operations." },
+      {
+        property: "og:description",
+        content:
+          "Organized teamwork, active leadership, and competitive Hell Let Loose operations.",
+      },
       { property: "og:image", content: heroImg },
       { name: "twitter:image", content: heroImg },
     ],
   }),
-  loader: ({ context }) => context.queryClient.ensureQueryData(serversQueryOptions),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(serverStatusQueryOptions),
+      context.queryClient.ensureQueryData(guildStatsQueryOptions),
+    ]),
   component: Index,
 });
-
 
 function Index() {
   return (
@@ -70,19 +88,21 @@ function Hero() {
       <div className="relative mx-auto max-w-7xl px-5 pt-20 pb-28 md:pt-32 md:pb-40">
         <div className="flex items-center gap-4">
           <span className="h-px w-12 bg-khaki" />
-          <span className="eyebrow">OPS BRIEF · 06.24.2026</span>
+          <span className="eyebrow">ENLISTMENT OPEN</span>
         </div>
 
         <h1 className="mt-6 max-w-4xl text-5xl leading-[0.95] text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
-          Fight with the <span className="text-khaki">best</span><br />
-          Hell Let Loose<br />
+          Fight with the <span className="text-khaki">best</span>
+          <br />
+          Hell Let Loose
+          <br />
           community.
         </h1>
 
         <p className="mt-7 max-w-xl text-base text-muted-foreground md:text-lg">
-          Organized teamwork. Active leadership. Competitive gameplay. Objective First is
-          one of the strongest, most disciplined communities in Hell Let Loose — and we're
-          recruiting.
+          We run organized teamwork, active leadership, and competitive nights. If you want Hell Let
+          Loose played the way it's meant to be played, with people who actually talk to each other,
+          come find us.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -105,12 +125,12 @@ function Hero() {
         <div className="mt-16 grid max-w-3xl grid-cols-2 gap-px border hairline bg-border/40 sm:grid-cols-4">
           {[
             ["2026", "Founded"],
-            ["3", "Dedicated Servers"],
-            ["12+", "Ops Per Month"],
+            ["1", "Dedicated Server"],
+            ["4", "Ops Per Month"],
             ["24/7", "Command Online"],
           ].map(([v, l]) => (
             <div key={l} className="bg-background/80 px-4 py-4 backdrop-blur">
-              <div className="stencil text-2xl text-khaki">{v}</div>
+              <div className="stencil tnum text-2xl text-khaki">{v}</div>
               <div className="eyebrow mt-1 text-[10px]">{l}</div>
             </div>
           ))}
@@ -121,11 +141,15 @@ function Hero() {
 }
 
 function Stats() {
+  const { data: guild } = useSuspenseQuery(guildStatsQueryOptions);
+  const { data: server } = useSuspenseQuery(serverStatusQueryOptions);
+  const fmt = (n: number | null) => (n == null ? "—" : n.toLocaleString("en-US"));
+
   const stats = [
-    { v: "2,847", l: "Active Members" },
-    { v: "8,420", l: "Discord Members" },
-    { v: "14", l: "Monthly Operations" },
-    { v: "187", l: "Avg Server Pop" },
+    { v: fmt(guild.onlineCount), l: "Members Online" },
+    { v: fmt(guild.memberCount), l: "Discord Members" },
+    { v: "1", l: "Monthly Operations" },
+    { v: server ? String(server.players) : "—", l: "Players In-Game" },
     { v: "2026", l: "Founded" },
   ];
   return (
@@ -134,7 +158,9 @@ function Stats() {
         <div className="grid grid-cols-2 gap-y-8 sm:grid-cols-3 md:grid-cols-5">
           {stats.map((s) => (
             <div key={s.l} className="flex flex-col items-start border-l-2 border-khaki/60 pl-4">
-              <div className="font-display text-3xl font-bold text-foreground md:text-4xl">{s.v}</div>
+              <div className="tnum font-display text-3xl font-bold text-foreground md:text-4xl">
+                {s.v}
+              </div>
               <div className="eyebrow mt-1 text-[10px]">{s.l}</div>
             </div>
           ))}
@@ -144,7 +170,17 @@ function Stats() {
   );
 }
 
-function SectionHeader({ index, eyebrow, title, sub }: { index: string; eyebrow: string; title: string; sub?: string }) {
+function SectionHeader({
+  index,
+  eyebrow,
+  title,
+  sub,
+}: {
+  index: string;
+  eyebrow: string;
+  title: string;
+  sub?: string;
+}) {
   return (
     <div className="mb-12 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div>
@@ -161,12 +197,36 @@ function SectionHeader({ index, eyebrow, title, sub }: { index: string; eyebrow:
 
 function WhyJoin() {
   const items = [
-    { n: "01", t: "Experienced Leadership", d: "Veteran officers run every op. Clear comms, clear orders, no chaos." },
-    { n: "02", t: "Structured Teamwork", d: "Squad doctrine, role specialization, and tactics that actually win games." },
-    { n: "03", t: "Active Community", d: "Daily full servers, voice-active members, and a Discord that never sleeps." },
-    { n: "04", t: "Competitive Events", d: "Weekly scrims, monthly campaigns, and a thriving SLB competitive program." },
-    { n: "05", t: "New Player Training", d: "Dedicated trainers run weekly bootcamps. Show up. Learn. Promote." },
-    { n: "06", t: "Dedicated Servers", d: "Three high-tickrate servers across EU and NA. Always populated. Always ours." },
+    {
+      n: "01",
+      t: "Experienced Leadership",
+      d: "Veteran officers run every op. Clear comms, clear orders, no chaos.",
+    },
+    {
+      n: "02",
+      t: "Structured Teamwork",
+      d: "Squad doctrine, role specialization, and tactics that actually win games.",
+    },
+    {
+      n: "03",
+      t: "Active Community",
+      d: "Voice-active members and a Discord that never sleeps.",
+    },
+    {
+      n: "04",
+      t: "Competitive Events",
+      d: "Weekly scrims, monthly campaigns, and a thriving SLB competitive program.",
+    },
+    {
+      n: "05",
+      t: "New Player Training",
+      d: "Dedicated trainers run weekly bootcamps. Show up. Learn. Promote.",
+    },
+    {
+      n: "06",
+      t: "Dedicated Server",
+      d: "Our own high-tickrate EU server, built for organized play. Always ours.",
+    },
   ];
   return (
     <section className="relative border-b hairline">
@@ -179,7 +239,10 @@ function WhyJoin() {
         />
         <div className="grid gap-px border hairline bg-border/40 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((i) => (
-            <div key={i.n} className="group relative bg-card p-7 transition-colors hover:bg-card/60">
+            <div
+              key={i.n}
+              className="group relative bg-card p-7 transition-colors hover:bg-card/60"
+            >
               <div className="stencil text-xs text-khaki/70">{i.n}</div>
               <h3 className="mt-4 text-xl text-foreground">{i.t}</h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{i.d}</p>
@@ -193,72 +256,54 @@ function WhyJoin() {
 }
 
 function Servers() {
-  const { data } = useSuspenseQuery(serversQueryOptions);
-  const servers = data.servers;
+  const { data: server } = useSuspenseQuery(serverStatusQueryOptions);
+  const pct = server
+    ? Math.min(100, Math.round((server.players / Math.max(1, server.maxPlayers)) * 100))
+    : 0;
   return (
     <section id="servers" className="relative border-b hairline bg-card/20">
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader
           index="02"
-          eyebrow="ACTIVE SERVERS · LIVE"
+          eyebrow="ACTIVE SERVER · LIVE"
           title="Dedicated. Populated. Ours."
-          sub="Live population pulled directly from BattleMetrics. Refreshed every minute."
+          sub="Live population pulled straight from our game server. Refreshed every minute."
         />
-        {servers.length === 0 ? (
+        {!server ? (
           <div className="border hairline bg-card p-10 text-center font-mono text-xs uppercase tracking-[0.22em] text-muted-foreground">
             Server data temporarily unavailable · Try again shortly
           </div>
         ) : (
-          <div className={`grid gap-px border hairline bg-border/40 ${servers.length > 1 ? "lg:grid-cols-3" : ""}`}>
-            {servers.map((s) => {
-              const online = s.status === "online";
-              const battlemetricsUrl = `https://www.battlemetrics.com/servers/hll/${s.id}`;
-              return (
-                <div key={s.id} className="relative bg-card p-7">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                      {s.country} · OFFICIAL
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-amber-500"}`} />
-                      <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                        {s.status}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="mt-4 text-lg text-foreground line-clamp-2">{s.name}</h3>
+          <div className="border hairline bg-card p-7 md:max-w-2xl">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Official
+              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 rounded-full ${server.online ? "bg-emerald-500" : "bg-amber-500"}`}
+                />
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {server.online ? "online" : "offline"}
+                </span>
+              </div>
+            </div>
+            <h3 className="mt-4 line-clamp-2 text-lg text-foreground">{server.name}</h3>
 
-                  <div className="mt-5 space-y-3 border-t hairline pt-4">
-                    <Row label="Population" value={`${s.players}/${s.maxPlayers}`} highlight />
-                    <Row label="Current Map" value={s.map} />
-                    {s.rank != null && <Row label="Global Rank" value={`#${s.rank}`} />}
-                  </div>
+            <div className="mt-5 space-y-3 border-t hairline pt-4">
+              <Row label="Population" value={`${server.players}/${server.maxPlayers}`} highlight />
+              <Row label="Current Map" value={server.map} />
+            </div>
 
-                  {/* Population bar */}
-                  <div className="mt-5">
-                    <div className="h-1.5 w-full overflow-hidden bg-border/60">
-                      <div
-                        className="h-full bg-khaki transition-all"
-                        style={{ width: `${Math.min(100, Math.round((s.players / Math.max(1, s.maxPlayers)) * 100))}%` }}
-                      />
-                    </div>
-                    <div className="mt-1 flex justify-between font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
-                      <span>0</span>
-                      <span>{s.maxPlayers}</span>
-                    </div>
-                  </div>
-
-                  <a
-                    href={battlemetricsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-6 inline-flex w-full items-center justify-center border border-khaki/70 bg-transparent py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
-                  >
-                    View on BattleMetrics →
-                  </a>
-                </div>
-              );
-            })}
+            <div className="mt-5">
+              <div className="h-1.5 w-full overflow-hidden bg-border/60">
+                <div className="h-full bg-khaki transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="mt-1 flex justify-between font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+                <span>0</span>
+                <span>{server.maxPlayers}</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -270,51 +315,33 @@ function Row({ label, value, highlight }: { label: string; value: string; highli
   return (
     <div className="flex items-center justify-between font-mono text-xs">
       <span className="text-muted-foreground">{label}</span>
-      <span className={highlight ? "text-khaki" : "text-foreground"}>{value}</span>
+      <span className={`tnum ${highlight ? "text-khaki" : "text-foreground"}`}>{value}</span>
     </div>
   );
 }
 
-
 function Operations() {
-  const ops = [
-    { d: "JUL 04", t: "OPERATION RED DAWN", type: "Community Battle", who: "60v60 · Cross-clan", time: "20:00 UTC" },
-    { d: "JUL 09", t: "Recruit Bootcamp", type: "Training", who: "New members · All welcome", time: "19:00 UTC" },
-    { d: "JUL 13", t: "SLB Scrim · Week 4", type: "Competitive", who: "Squad Line Battle · Roster only", time: "21:00 UTC" },
-    { d: "JUL 20", t: "Campaign: Bocage", type: "Campaign", who: "3-night operation", time: "20:00 UTC" },
-  ];
   return (
     <section id="operations" className="relative border-b hairline">
-
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader
           index="03"
           eyebrow="OPERATIONS BOARD"
           title="Upcoming operations"
-          sub="Our schedule runs weekly. Show up, follow the briefing, and play with people who care."
+          sub="The operations board isn't live yet. For now, keep an eye on our Discord."
         />
-        <div className="border hairline">
-          {ops.map((o, i) => (
-            <div
-              key={o.t}
-              className={`grid grid-cols-12 items-center gap-4 px-5 py-5 md:px-7 ${
-                i !== ops.length - 1 ? "border-b hairline" : ""
-              } transition-colors hover:bg-card/50`}
-            >
-              <div className="col-span-3 md:col-span-2">
-                <div className="stencil text-khaki text-base md:text-xl">{o.d}</div>
-                <div className="eyebrow mt-1 text-[9px]">{o.time}</div>
-              </div>
-              <div className="col-span-9 md:col-span-5">
-                <h3 className="text-base text-foreground md:text-lg">{o.t}</h3>
-                <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{o.type}</div>
-              </div>
-              <div className="col-span-9 col-start-4 text-sm text-muted-foreground md:col-span-4 md:col-start-auto">{o.who}</div>
-              <div className="col-span-3 text-right md:col-span-1">
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-khaki">RSVP →</span>
-              </div>
-            </div>
-          ))}
+        <div className="border hairline bg-card p-12 text-center">
+          <div className="stencil text-2xl text-khaki/80 md:text-3xl">Still Under Construction</div>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+            We're still building the operations board. Scheduled ops, RSVPs, and briefings will live
+            here soon — until then, check our Discord for what's coming up.
+          </p>
+          <a
+            href="https://discord.gg/obj1st"
+            className="mt-6 inline-flex items-center gap-2 border-2 border-khaki px-5 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
+          >
+            Check Discord →
+          </a>
         </div>
       </div>
     </section>
@@ -331,12 +358,14 @@ function Gallery() {
   ];
   return (
     <section className="relative border-b hairline bg-card/20">
-
       <div className="mx-auto max-w-7xl px-5 py-24">
         <SectionHeader index="04" eyebrow="FIELD ARCHIVE" title="From the front lines" />
         <div className="grid auto-rows-[200px] grid-cols-2 gap-3 md:auto-rows-[220px] md:grid-cols-4">
           {tiles.map((t) => (
-            <div key={t.label} className={`group relative overflow-hidden border hairline ${t.span ?? ""}`}>
+            <div
+              key={t.label}
+              className={`group relative overflow-hidden border hairline ${t.span ?? ""}`}
+            >
               <img
                 src={t.src}
                 alt={t.label}
@@ -347,8 +376,9 @@ function Gallery() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-khaki">{t.label}</span>
-                <span className="font-mono text-[10px] text-muted-foreground">[CLASSIFIED]</span>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-khaki">
+                  {t.label}
+                </span>
               </div>
             </div>
           ))}
@@ -361,7 +391,12 @@ function Gallery() {
 function Recruitment() {
   return (
     <section id="recruitment" className="relative isolate border-b hairline overflow-hidden">
-      <img src={commandImg} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-20" />
+      <img
+        src={commandImg}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover opacity-20"
+      />
       <div className="absolute inset-0 bg-background/80" />
       <div className="absolute inset-0 grid-tactical opacity-40" />
       <div className="relative mx-auto max-w-7xl px-5 py-28">
@@ -372,8 +407,8 @@ function Recruitment() {
               Ready to <span className="text-khaki">enlist?</span>
             </h2>
             <p className="mt-5 max-w-md text-muted-foreground">
-              We accept members who want to play the game properly. No experience required —
-              just a working mic, a willingness to learn, and respect for the people you play with.
+              We take people who want to play the game properly. No experience needed: just a
+              working mic, a willingness to learn, and respect for the people you play with.
             </p>
             <a
               href="https://discord.gg/obj1st"
@@ -386,7 +421,6 @@ function Recruitment() {
           <div className="border hairline bg-card/70 p-8 backdrop-blur">
             <div className="flex items-center justify-between border-b hairline pb-3">
               <span className="eyebrow">ENLISTMENT REQUIREMENTS</span>
-              <span className="font-mono text-[10px] text-muted-foreground">FORM 1-A</span>
             </div>
             <ul className="mt-5 space-y-4">
               {[
@@ -414,9 +448,21 @@ function Recruitment() {
 
 function Testimonials() {
   const quotes = [
-    { q: "Best HLL community I've found in five years. The structure is real, not just talk.", n: "Sgt. Halverson", r: "Infantry · 2 yrs" },
-    { q: "Showed up as a brand new player. Trainers walked me through every role. Now I lead squads.", n: "Cpl. Reyes", r: "Squad Lead · 1 yr" },
-    { q: "The SLB program is the most fun I've had in this game. Real tactics. Real stakes.", n: "Lt. Brennan", r: "SLB Roster · 3 yrs" },
+    {
+      q: "The structure here is real, not just talk. Squads actually hold together when it matters.",
+      n: "Halvo",
+      r: "Infantry",
+    },
+    {
+      q: "Showed up as a brand new player. Trainers walked me through every role. Now I lead squads.",
+      n: "Reyez",
+      r: "Squad lead",
+    },
+    {
+      q: "SLB nights are the most fun I've had in this game. Real tactics, real stakes.",
+      n: "Brennan",
+      r: "SLB roster",
+    },
   ];
   return (
     <section className="border-b hairline">
@@ -426,9 +472,13 @@ function Testimonials() {
           {quotes.map((q) => (
             <figure key={q.n} className="bg-card p-8">
               <div className="stencil text-3xl text-khaki/60 leading-none">"</div>
-              <blockquote className="mt-3 text-base leading-relaxed text-foreground">{q.q}</blockquote>
+              <blockquote className="mt-3 text-base leading-relaxed text-foreground">
+                {q.q}
+              </blockquote>
               <figcaption className="mt-6 border-t hairline pt-4">
-                <div className="font-display text-sm uppercase tracking-wider text-foreground">{q.n}</div>
+                <div className="font-display text-sm uppercase tracking-wider text-foreground">
+                  {q.n}
+                </div>
                 <div className="eyebrow mt-1 text-[10px]">{q.r}</div>
               </figcaption>
             </figure>
@@ -441,28 +491,55 @@ function Testimonials() {
 
 function FAQ() {
   const faqs = [
-    { q: "How do I join?", a: "Hop into our Discord, introduce yourself in #recruitment, and a recruiter will run you through a quick interview. From there it's a two-week trial." },
-    { q: "Do I need a microphone?", a: "Yes — non-negotiable. Hell Let Loose is a comms-based game and our entire doctrine depends on voice communication." },
-    { q: "Is training required?", a: "Not required, but highly recommended. Bootcamps run weekly and they're the fastest path from new player to squad lead." },
-    { q: "Which region are your servers in?", a: "We host two EU servers (Frankfurt) and one NA East server (Virginia). All run at 60Hz tickrate." },
-    { q: "What's SLB?", a: "Squad Line Battle — our new competitive program. Curated rosters, scheduled scrims, and league-style matches against other top HLL clans." },
-    { q: "Is there an age requirement?", a: "18+. We're an adult community and our voice comms reflect that — no kids on the front line." },
+    {
+      q: "How do I join?",
+      a: "Hop into our Discord, introduce yourself in #recruitment, and a recruiter will run you through a quick interview. From there it's a two-week trial.",
+    },
+    {
+      q: "Do I need a microphone?",
+      a: "Yes — non-negotiable. Hell Let Loose is a comms-based game and our entire doctrine depends on voice communication.",
+    },
+    {
+      q: "Is training required?",
+      a: "Not required, but highly recommended. Bootcamps run weekly and they're the fastest path from new player to squad lead.",
+    },
+    {
+      q: "Which region are your servers in?",
+      a: "We host two EU servers (Frankfurt) and one NA East server (Virginia). All run at 60Hz tickrate.",
+    },
+    {
+      q: "What's SLB?",
+      a: "Squad Line Battle — our new competitive program. Curated rosters, scheduled scrims, and league-style matches against other top HLL clans.",
+    },
+    {
+      q: "Is there an age requirement?",
+      a: "18+. We're an adult community and our voice comms reflect that — no kids on the front line.",
+    },
   ];
   return (
     <section className="border-b hairline bg-card/20">
       <div className="mx-auto max-w-7xl px-5 py-24">
-        <SectionHeader index="07" eyebrow="FREQUENT INTEL REQUESTS" title="FAQ" />
+        <SectionHeader index="07" eyebrow="COMMON QUESTIONS" title="FAQ" />
         <div className="border hairline">
           {faqs.map((f, i) => (
-            <details key={f.q} className={`group ${i !== faqs.length - 1 ? "border-b hairline" : ""}`}>
+            <details
+              key={f.q}
+              className={`group ${i !== faqs.length - 1 ? "border-b hairline" : ""}`}
+            >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-6 px-6 py-5 transition-colors hover:bg-card/50">
                 <div className="flex items-center gap-4">
-                  <span className="font-mono text-[10px] text-khaki">[{String(i + 1).padStart(2, "0")}]</span>
+                  <span className="font-mono text-[10px] text-khaki">
+                    [{String(i + 1).padStart(2, "0")}]
+                  </span>
                   <span className="text-base text-foreground md:text-lg">{f.q}</span>
                 </div>
-                <span className="font-mono text-khaki transition-transform group-open:rotate-45">+</span>
+                <span className="font-mono text-khaki transition-transform group-open:rotate-45">
+                  +
+                </span>
               </summary>
-              <div className="px-6 pb-6 pl-16 text-sm leading-relaxed text-muted-foreground">{f.a}</div>
+              <div className="px-6 pb-6 pl-16 text-sm leading-relaxed text-muted-foreground">
+                {f.a}
+              </div>
             </details>
           ))}
         </div>

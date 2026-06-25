@@ -9,12 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SlbRouteImport } from './routes/slb'
+import { Route as MembersRouteImport } from './routes/members'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
+import { Route as AuthDiscordLoginRouteImport } from './routes/auth/discord/login'
+import { Route as AuthDiscordCallbackRouteImport } from './routes/auth/discord/callback'
 
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SlbRoute = SlbRouteImport.update({
   id: '/slb',
   path: '/slb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembersRoute = MembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,40 +43,125 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthLogoutRoute = AuthLogoutRouteImport.update({
+  id: '/auth/logout',
+  path: '/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDiscordLoginRoute = AuthDiscordLoginRouteImport.update({
+  id: '/auth/discord/login',
+  path: '/auth/discord/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthDiscordCallbackRoute = AuthDiscordCallbackRouteImport.update({
+  id: '/auth/discord/callback',
+  path: '/auth/discord/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/members': typeof MembersRoute
   '/slb': typeof SlbRoute
+  '/stats': typeof StatsRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/auth/discord/callback': typeof AuthDiscordCallbackRoute
+  '/auth/discord/login': typeof AuthDiscordLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/members': typeof MembersRoute
   '/slb': typeof SlbRoute
+  '/stats': typeof StatsRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/auth/discord/callback': typeof AuthDiscordCallbackRoute
+  '/auth/discord/login': typeof AuthDiscordLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/members': typeof MembersRoute
   '/slb': typeof SlbRoute
+  '/stats': typeof StatsRoute
+  '/auth/logout': typeof AuthLogoutRoute
+  '/auth/discord/callback': typeof AuthDiscordCallbackRoute
+  '/auth/discord/login': typeof AuthDiscordLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/slb'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/members'
+    | '/slb'
+    | '/stats'
+    | '/auth/logout'
+    | '/auth/discord/callback'
+    | '/auth/discord/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/slb'
-  id: '__root__' | '/' | '/slb'
+  to:
+    | '/'
+    | '/login'
+    | '/members'
+    | '/slb'
+    | '/stats'
+    | '/auth/logout'
+    | '/auth/discord/callback'
+    | '/auth/discord/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/members'
+    | '/slb'
+    | '/stats'
+    | '/auth/logout'
+    | '/auth/discord/callback'
+    | '/auth/discord/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  MembersRoute: typeof MembersRoute
   SlbRoute: typeof SlbRoute
+  StatsRoute: typeof StatsRoute
+  AuthLogoutRoute: typeof AuthLogoutRoute
+  AuthDiscordCallbackRoute: typeof AuthDiscordCallbackRoute
+  AuthDiscordLoginRoute: typeof AuthDiscordLoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/slb': {
       id: '/slb'
       path: '/slb'
       fullPath: '/slb'
       preLoaderRoute: typeof SlbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/members': {
+      id: '/members'
+      path: '/members'
+      fullPath: '/members'
+      preLoaderRoute: typeof MembersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -65,12 +171,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/logout': {
+      id: '/auth/logout'
+      path: '/auth/logout'
+      fullPath: '/auth/logout'
+      preLoaderRoute: typeof AuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/discord/login': {
+      id: '/auth/discord/login'
+      path: '/auth/discord/login'
+      fullPath: '/auth/discord/login'
+      preLoaderRoute: typeof AuthDiscordLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/discord/callback': {
+      id: '/auth/discord/callback'
+      path: '/auth/discord/callback'
+      fullPath: '/auth/discord/callback'
+      preLoaderRoute: typeof AuthDiscordCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  MembersRoute: MembersRoute,
   SlbRoute: SlbRoute,
+  StatsRoute: StatsRoute,
+  AuthLogoutRoute: AuthLogoutRoute,
+  AuthDiscordCallbackRoute: AuthDiscordCallbackRoute,
+  AuthDiscordLoginRoute: AuthDiscordLoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

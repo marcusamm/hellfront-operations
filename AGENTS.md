@@ -1,10 +1,13 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# Project notes
+
+This is a TanStack Start (React + Vite + Nitro) application.
+
+- Routes live in `src/routes` (file-based routing; `routeTree.gen.ts` is generated — don't edit by hand).
+- `src/server.ts` / `src/start.ts` wrap SSR with error handling.
+- Discord login and role-based access: see `DISCORD_SETUP.md`.
+
+## Commands
+
+- `npm run dev` — start the dev server (http://localhost:3000)
+- `npm run build` — production build (Nitro, node-server preset by default)
+- `npm run lint` / `npm run format`

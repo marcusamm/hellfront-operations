@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { getServers } from "@/lib/battlemetrics.functions";
-
-const HEADER_SERVER_IDS = ["38460828"];
-
+import { getServerStatus } from "@/lib/server-status.functions";
+import { useAuth } from "@/lib/auth-client";
 
 type NavItem = { to: string; label: string; hash?: string; badge?: "NEW" };
 
@@ -31,7 +29,7 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-7 xl:flex">
           {NAV.map((item) => (
             <Link
               key={item.label}
@@ -50,8 +48,8 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <ServerStatusPill />
+        <div className="hidden items-center gap-3 xl:flex">
+          <AuthControls />
           <a
             href="https://discord.gg/obj1st"
             className="group inline-flex items-center gap-2 border-2 border-khaki bg-khaki px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
@@ -63,7 +61,7 @@ export function SiteHeader() {
 
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex h-10 w-10 items-center justify-center border hairline text-khaki md:hidden"
+          className="flex h-10 w-10 items-center justify-center border hairline text-khaki xl:hidden"
           aria-label="Menu"
         >
           <span className="block h-0.5 w-5 bg-current shadow-[0_-6px_0_currentColor,0_6px_0_currentColor]" />
@@ -71,7 +69,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <div className="border-t hairline bg-card md:hidden">
+        <div className="border-t hairline bg-card xl:hidden">
           <div className="flex flex-col px-5 py-4">
             {NAV.map((item) => (
               <Link
@@ -96,6 +94,9 @@ export function SiteHeader() {
               <DiscordIcon className="h-3.5 w-3.5" />
               Join Discord
             </a>
+            <div className="mt-3">
+              <AuthControls mobile onNavigate={() => setOpen(false)} />
+            </div>
           </div>
         </div>
       )}
@@ -103,19 +104,85 @@ export function SiteHeader() {
   );
 }
 
+export function AuthControls({
+  mobile = false,
+  onNavigate,
+}: {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <Link
+        to="/login"
+        onClick={onNavigate}
+        className={
+          mobile
+            ? "inline-flex w-full items-center justify-center gap-2 border-2 border-foreground/30 px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-foreground"
+            : "inline-flex items-center gap-2 border-2 border-foreground/30 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-khaki hover:text-khaki"
+        }
+      >
+        Sign In
+      </Link>
+    );
+  }
+
+  const avatar = user.avatarUrl ? (
+    <img
+      src={user.avatarUrl}
+      alt=""
+      width={24}
+      height={24}
+      className="h-6 w-6 shrink-0 object-cover"
+    />
+  ) : (
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-olive-deep stencil text-[10px] text-khaki">
+      {user.username.slice(0, 2).toUpperCase()}
+    </span>
+  );
+
+  return (
+    <div className={mobile ? "flex items-center gap-2" : "flex items-center gap-2"}>
+      <Link
+        to="/members"
+        onClick={onNavigate}
+        className={
+          (mobile ? "flex-1 " : "max-w-[160px] ") +
+          "flex items-center gap-2 border hairline px-2.5 py-1.5 transition-colors hover:border-khaki"
+        }
+      >
+        {avatar}
+        <span className="truncate font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
+          {user.username}
+        </span>
+      </Link>
+      <a
+        href="/auth/logout"
+        onClick={onNavigate}
+        title="Sign out"
+        className="inline-flex items-center border hairline px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:border-rust hover:text-rust"
+      >
+        Sign Out
+      </a>
+    </div>
+  );
+}
+
 export function ServerStatusPill() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const { data } = useQuery({
-    queryKey: ["battlemetrics", "servers", HEADER_SERVER_IDS],
-    queryFn: () => getServers({ data: { ids: HEADER_SERVER_IDS } }),
+    queryKey: ["crcon", "serverStatus"],
+    queryFn: () => getServerStatus(),
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
-  const s = mounted ? data?.servers[0] : undefined;
-  const online = s ? s.status === "online" : false;
+  const s = mounted ? data : undefined;
+  const online = !!s && s.online;
   const dotColor = !s ? "bg-muted-foreground" : online ? "bg-emerald-500" : "bg-amber-500";
-  const label = !s ? "Loading…" : online ? "Server Online" : s.status.toUpperCase();
+  const label = !s ? "Loading…" : online ? "Server Online" : "Offline";
   const count = s ? `${s.players}/${s.maxPlayers}` : "—/—";
   return (
     <a
@@ -123,7 +190,9 @@ export function ServerStatusPill() {
       className="flex items-center gap-2 border hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:text-khaki"
     >
       <span className="relative flex h-2 w-2">
-        {online && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/70 opacity-75" />}
+        {online && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/70 opacity-75" />
+        )}
         <span className={`relative inline-flex h-2 w-2 rounded-full ${dotColor}`} />
       </span>
       <span>{label}</span>
@@ -131,7 +200,6 @@ export function ServerStatusPill() {
     </a>
   );
 }
-
 
 export function MobileStickyCTA() {
   return (
