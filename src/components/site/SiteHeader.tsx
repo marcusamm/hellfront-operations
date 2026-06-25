@@ -144,9 +144,21 @@ export function AuthControls({
   );
 
   const canRcon = user.capabilities.includes("rcon");
+  const canAdminMap = user.capabilities.includes("admin") || user.capabilities.includes("rcon");
 
   return (
     <div className={mobile ? "flex items-center gap-2" : "flex items-center gap-2"}>
+      {canAdminMap && (
+        <Link
+          to="/admin"
+          onClick={onNavigate}
+          title="Live Tactical Map"
+          className="inline-flex items-center gap-1.5 border-2 border-khaki bg-khaki/10 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-khaki" />
+          Map
+        </Link>
+      )}
       {canRcon && (
         <Link
           to="/rcon"
