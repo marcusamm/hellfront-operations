@@ -1,15 +1,20 @@
 # Self-hosted RCON Relay
 
-The site is wired to talk to a **custom RCON relay** instead of CRCON when two
-environment variables are set:
+Working relay files are in the `rcon-relay/` folder of this project:
+
+- `server.js` — Fastify HTTP relay + HLL RCON client + match logger
+- `package.json` — dependencies
+- `Dockerfile` / `docker-compose.yml` / `Caddyfile` — Linux/Docker deployment
+- `.env.example` — copy to `.env` and fill in your credentials
+
+The site is wired to talk to this relay instead of CRCON when two environment variables are set:
 
 | Secret              | What it is                                                       |
 | ------------------- | ---------------------------------------------------------------- |
 | `RCON_RELAY_URL`    | HTTPS URL of your relay, e.g. `https://rcon.yourdomain.com`      |
 | `RCON_RELAY_TOKEN`  | A long random string. The site sends `Authorization: Bearer <token>` |
 
-If those are NOT set, the site falls back to CRCON. Nothing in the UI changes
-either way.
+If those are NOT set, the site falls back to CRCON. Nothing in the UI changes either way.
 
 ---
 
