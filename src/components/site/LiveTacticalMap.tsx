@@ -3,11 +3,24 @@ import { useMemo, useState } from "react";
 import { getGameState, getRconPlayers, type RconPlayer } from "@/lib/rcon.functions";
 import { HLL_MAPS, mapById, normalizeMapId, type HllMap } from "@/lib/hll-maps";
 
+const MAP_SIZE = 1000;
+
+type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
+type MapGeo = {
+  orientation?: "horizontal" | "vertical";
+  bounds: Bounds;
+  mirror_factions?: boolean;
+  points?: { id: string; name: string; x: number; y: number }[];
+};
+type Geometry = { maps: Record<string, MapGeo> };
+
 /**
  * In-website Hell Let Loose live tactical map.
  *
- * Pulls live state directly from CRCON through the existing server functions
- * (no separate Node/Socket.io service required). Polls every few seconds.
+ * - Map artwork + map-geometry.json ported from the standalone live-map app.
+ * - Live game state + player positions come from CRCON via existing server fns.
+ * - Sector front-line and player markers are rendered as an SVG overlay on top
+ *   of the tactical image, refreshed every few seconds.
  */
 export function LiveTacticalMap() {
   const gs = useQuery({
@@ -18,14 +31,25 @@ export function LiveTacticalMap() {
   const pl = useQuery({
     queryKey: ["live-map", "players"],
     queryFn: () => getRconPlayers(),
-    refetchInterval: 5_000,
+    refetchInterval: 3_000,
+  });
+  const geo = useQuery({
+    queryKey: ["live-map", "geometry"],
+    queryFn: async (): Promise<Geometry | null> => {
+      const r = await fetch("/map-geometry.json");
+      if (!r.ok) return null;
+      return (await r.json()) as Geometry;
+    },
+    staleTime: Infinity,
   });
 
-  const detected = gs.data?.status === "ok" ? gs.data.current_map ?? null : null;
+  const detected = gs.data?.status === "ok" ? (gs.data.current_map ?? null) : null;
   const autoId = normalizeMapId(detected);
   const [override, setOverride] = useState<string | null>(null);
   const currentId = override ?? autoId;
   const currentMap = mapById(currentId);
+  const mapGeo: MapGeo | null =
+    currentId && geo.data?.maps?.[currentId] ? geo.data.maps[currentId] : null;
 
   const error =
     gs.data?.status === "forbidden" || pl.data?.status === "forbidden"
@@ -36,10 +60,11 @@ export function LiveTacticalMap() {
           ? pl.data.message
           : null;
 
-  const players: RconPlayer[] =
-    pl.data?.status === "ok" ? pl.data.players : [];
-
+  const players: RconPlayer[] = pl.data?.status === "ok" ? pl.data.players : [];
   const teams = useMemo(() => groupByTeam(players), [players]);
+
+  const allied = gs.data?.status === "ok" ? (gs.data.allied_score ?? 0) : 0;
+  const axis = gs.data?.status === "ok" ? (gs.data.axis_score ?? 0) : 0;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -49,7 +74,7 @@ export function LiveTacticalMap() {
           <div>
             <div className="eyebrow">CURRENT MAP</div>
             <div className="mt-1 font-mono text-sm text-foreground">
-              {currentMap ? currentMap.name : detected ?? "Waiting for live map…"}
+              {currentMap ? currentMap.name : (detected ?? "Waiting for live map…")}
               {override && (
                 <button
                   onClick={() => setOverride(null)}
@@ -61,16 +86,22 @@ export function LiveTacticalMap() {
             </div>
           </div>
           <ScoreBadge
-            allied={gs.data?.status === "ok" ? gs.data.allied_score ?? 0 : 0}
-            axis={gs.data?.status === "ok" ? gs.data.axis_score ?? 0 : 0}
-            allCount={gs.data?.status === "ok" ? gs.data.num_allied_players ?? 0 : 0}
-            axCount={gs.data?.status === "ok" ? gs.data.num_axis_players ?? 0 : 0}
+            allied={allied}
+            axis={axis}
+            allCount={gs.data?.status === "ok" ? (gs.data.num_allied_players ?? 0) : 0}
+            axCount={gs.data?.status === "ok" ? (gs.data.num_axis_players ?? 0) : 0}
             time={gs.data?.status === "ok" ? gs.data.time_remaining : undefined}
           />
         </div>
 
         <div className="relative bg-background">
-          <MapImage map={currentMap} />
+          <MapCanvas
+            map={currentMap}
+            geo={mapGeo}
+            players={players}
+            allied={allied}
+            axis={axis}
+          />
         </div>
 
         <div className="border-t hairline bg-background/40 px-4 py-3">
@@ -163,16 +194,47 @@ function ScoreBadge({
   );
 }
 
-function MapImage({ map }: { map: HllMap | null }) {
+// ---------------------------------------------------------------------------
+// Map rendering
+// ---------------------------------------------------------------------------
+
+function MapCanvas({
+  map,
+  geo,
+  players,
+  allied,
+  axis,
+}: {
+  map: HllMap | null;
+  geo: MapGeo | null;
+  players: RconPlayer[];
+  allied: number;
+  axis: number;
+}) {
   const [broken, setBroken] = useState(false);
-  if (!map || broken) return <MapPlaceholder name={map?.name ?? "Unknown map"} />;
+
   return (
-    <img
-      src={map.image}
-      alt={`${map.name} tactical map`}
-      onError={() => setBroken(true)}
-      className="block aspect-square w-full object-cover"
-    />
+    <div className="relative aspect-square w-full">
+      {map && !broken ? (
+        <img
+          src={map.image}
+          alt={`${map.name} tactical map`}
+          onError={() => setBroken(true)}
+          className="absolute inset-0 block h-full w-full object-cover"
+        />
+      ) : (
+        <MapPlaceholder name={map?.name ?? "Unknown map"} />
+      )}
+
+      <svg
+        viewBox={`0 0 ${MAP_SIZE} ${MAP_SIZE}`}
+        className="absolute inset-0 h-full w-full"
+        preserveAspectRatio="none"
+      >
+        {geo && <SectorOverlay geo={geo} allied={allied} axis={axis} />}
+        {geo && <PlayerMarkers geo={geo} players={players} />}
+      </svg>
+    </div>
   );
 }
 
@@ -182,51 +244,172 @@ function MapPlaceholder({ name }: { name: string }) {
       viewBox="0 0 1000 1000"
       role="img"
       aria-label={`${name} map placeholder`}
-      className="block aspect-square w-full"
+      className="absolute inset-0 h-full w-full"
     >
-      <defs>
-        <pattern id="livemap-grid" width="100" height="100" patternUnits="userSpaceOnUse">
-          <path d="M100 0H0V100" fill="none" stroke="#4b5563" strokeWidth="2" opacity="0.55" />
-        </pattern>
-      </defs>
       <rect width="1000" height="1000" fill="#242424" />
-      <rect width="1000" height="1000" fill="url(#livemap-grid)" />
-      <path
-        d="M110 680C210 560 300 610 410 475c130-160 250-105 360-225 55-60 90-78 130-88v730H110Z"
-        fill="#3f4d36"
-        opacity="0.72"
-      />
-      <path
-        d="M0 360c130 44 210 24 318-38 140-80 236-61 350 24 94 70 195 81 332 22v632H0Z"
-        fill="#554f3f"
-        opacity="0.5"
-      />
-      <line x1="500" y1="0" x2="500" y2="1000" stroke="#d6d3c8" strokeWidth="3" opacity="0.45" />
-      <line x1="0" y1="500" x2="1000" y2="500" stroke="#d6d3c8" strokeWidth="3" opacity="0.45" />
       <text
         x="500"
-        y="495"
+        y="500"
         textAnchor="middle"
         fontFamily="ui-monospace, Menlo, monospace"
-        fontSize="56"
+        fontSize="48"
         fontWeight="700"
         fill="#f3f4f6"
       >
         {name}
       </text>
-      <text
-        x="500"
-        y="555"
-        textAnchor="middle"
-        fontFamily="ui-monospace, Menlo, monospace"
-        fontSize="22"
-        fill="#cbd5e1"
-      >
-        Drop tactical artwork into /public/maps/ to replace this view
-      </text>
     </svg>
   );
 }
+
+function SectorOverlay({ geo, allied, axis }: { geo: MapGeo; allied: number; axis: number }) {
+  const vertical = geo.orientation === "vertical";
+  const mirror = geo.mirror_factions === true;
+  const size = MAP_SIZE;
+  const aDepth = (Math.max(0, Math.min(5, allied)) / 5) * size;
+  const xDepth = (Math.max(0, Math.min(5, axis)) / 5) * size;
+  const BLUE = "#3b82f6";
+  const RED = "#ef4444";
+
+  const zones: { x: number; y: number; w: number; h: number; color: string; front?: "L" | "R" | "T" | "B" }[] = [];
+
+  if (vertical) {
+    if (mirror) {
+      if (axis > 0) zones.push({ x: 0, y: 0, w: size, h: xDepth, color: RED, front: "B" });
+      if (allied > 0) zones.push({ x: 0, y: size - aDepth, w: size, h: aDepth, color: BLUE, front: "T" });
+    } else {
+      if (allied > 0) zones.push({ x: 0, y: 0, w: size, h: aDepth, color: BLUE, front: "B" });
+      if (axis > 0) zones.push({ x: 0, y: size - xDepth, w: size, h: xDepth, color: RED, front: "T" });
+    }
+  } else {
+    if (mirror) {
+      if (axis > 0) zones.push({ x: 0, y: 0, w: xDepth, h: size, color: RED, front: "R" });
+      if (allied > 0) zones.push({ x: size - aDepth, y: 0, w: aDepth, h: size, color: BLUE, front: "L" });
+    } else {
+      if (allied > 0) zones.push({ x: 0, y: 0, w: aDepth, h: size, color: BLUE, front: "R" });
+      if (axis > 0) zones.push({ x: size - xDepth, y: 0, w: xDepth, h: size, color: RED, front: "L" });
+    }
+  }
+
+  return (
+    <g>
+      {/* Sector grid (5 sectors) */}
+      {[0.2, 0.4, 0.6, 0.8].map((f) => {
+        const p = Math.round(f * size);
+        return vertical ? (
+          <line key={f} x1={0} y1={p} x2={size} y2={p} stroke="#d6d3c8" strokeWidth={2} opacity={0.45} />
+        ) : (
+          <line key={f} x1={p} y1={0} x2={p} y2={size} stroke="#d6d3c8" strokeWidth={2} opacity={0.45} />
+        );
+      })}
+
+      {zones.map((z, i) => (
+        <g key={i}>
+          <rect x={z.x} y={z.y} width={z.w} height={z.h} fill={z.color} fillOpacity={0.14} />
+          {z.front === "R" && (
+            <line x1={z.x + z.w} y1={0} x2={z.x + z.w} y2={size} stroke={z.color} strokeWidth={4} opacity={0.9} />
+          )}
+          {z.front === "L" && (
+            <line x1={z.x} y1={0} x2={z.x} y2={size} stroke={z.color} strokeWidth={4} opacity={0.9} />
+          )}
+          {z.front === "B" && (
+            <line x1={0} y1={z.y + z.h} x2={size} y2={z.y + z.h} stroke={z.color} strokeWidth={4} opacity={0.9} />
+          )}
+          {z.front === "T" && (
+            <line x1={0} y1={z.y} x2={size} y2={z.y} stroke={z.color} strokeWidth={4} opacity={0.9} />
+          )}
+        </g>
+      ))}
+    </g>
+  );
+}
+
+function worldToPixel(x: number, y: number, b: Bounds): { px: number; py: number } {
+  const nx = Math.max(0, Math.min(1, (x - b.minX) / (b.maxX - b.minX)));
+  const ny = Math.max(0, Math.min(1, (y - b.minY) / (b.maxY - b.minY)));
+  return { px: nx * MAP_SIZE, py: (1 - ny) * MAP_SIZE };
+}
+
+function teamColor(team: string | null): string {
+  const t = (team ?? "").toLowerCase();
+  if (t.includes("all") || t.includes("us") || t.includes("brit")) return "#3b82f6";
+  if (t.includes("axis") || t.includes("ger")) return "#ef4444";
+  return "#9ca3af";
+}
+
+function isLeader(role: string | null): "cmd" | "sl" | null {
+  const r = (role ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  if (!r) return null;
+  if (r === "armycommander" || r === "commander") return "cmd";
+  if (
+    r === "officer" ||
+    r === "squadleader" ||
+    r === "platoonleader" ||
+    r === "tankcommander" ||
+    r === "crewcommander" ||
+    r === "spotter"
+  )
+    return "sl";
+  return null;
+}
+
+function PlayerMarkers({ geo, players }: { geo: MapGeo; players: RconPlayer[] }) {
+  const dots = players
+    .filter((p) => p.x !== null && p.y !== null)
+    .map((p) => {
+      const { px, py } = worldToPixel(p.x as number, p.y as number, geo.bounds);
+      return { p, px, py };
+    });
+
+  return (
+    <g>
+      {dots.map(({ p, px, py }) => (
+        <circle
+          key={p.player_id}
+          cx={px}
+          cy={py}
+          r={6}
+          fill={teamColor(p.team)}
+          stroke="#111"
+          strokeWidth={1.5}
+        >
+          <title>
+            {p.name}
+            {p.role ? ` · ${p.role}` : ""}
+            {p.unit_name ? ` · ${p.unit_name}` : ""}
+          </title>
+        </circle>
+      ))}
+      {dots.map(({ p, px, py }) => {
+        const kind = isLeader(p.role);
+        if (!kind) return null;
+        const label = kind === "cmd" ? "CMD" : (p.unit_name?.toUpperCase() || "SL");
+        const color = kind === "cmd" ? "#facc15" : teamColor(p.team);
+        return (
+          <text
+            key={`l-${p.player_id}`}
+            x={px}
+            y={py - 10}
+            textAnchor="middle"
+            fontFamily="ui-monospace, Menlo, monospace"
+            fontSize={12}
+            fontWeight={700}
+            fill={color}
+            stroke="#000"
+            strokeWidth={3}
+            paintOrder="stroke"
+          >
+            {label}
+          </text>
+        );
+      })}
+    </g>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Player sidebar
+// ---------------------------------------------------------------------------
 
 type Squad = { name: string; players: RconPlayer[] };
 type TeamGroup = { squads: Squad[]; count: number };
@@ -245,11 +428,7 @@ function groupByTeam(players: RconPlayer[]): {
     else if (t.includes("axis") || t.includes("ger")) axis.push(p);
     else other.push(p);
   }
-  return {
-    allies: bySquad(allies),
-    axis: bySquad(axis),
-    other,
-  };
+  return { allies: bySquad(allies), axis: bySquad(axis), other };
 }
 
 function bySquad(list: RconPlayer[]): TeamGroup {

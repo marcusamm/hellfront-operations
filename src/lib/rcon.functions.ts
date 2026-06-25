@@ -12,6 +12,10 @@ export type RconPlayer = {
   level: number | null;
   kills: number;
   deaths: number;
+  loadout: string | null;
+  x: number | null;
+  y: number | null;
+  z: number | null;
 };
 
 export type RconPlayersResult = {
@@ -62,6 +66,15 @@ export const getRconPlayers = createServerFn({ method: "GET" }).handler(
       const id = pickS(p, "player_id", "steam_id_64", "id");
       const name = pickS(p, "name", "player", "player_name");
       if (!id || !name) continue;
+      const pos = (p.world_position ?? p.worldPosition) as Record<string, unknown> | undefined;
+      const toNum = (v: unknown) => {
+        const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+        return Number.isFinite(n) ? n : null;
+      };
+      const x = pos ? toNum(pos.x) : null;
+      const y = pos ? toNum(pos.y) : null;
+      const z = pos ? toNum(pos.z) : null;
+      const hasPos = x !== null && y !== null && !(x === 0 && y === 0 && (z ?? 0) === 0);
       rows.push({
         name,
         player_id: id,
@@ -71,6 +84,10 @@ export const getRconPlayers = createServerFn({ method: "GET" }).handler(
         level: pickN(p, "level") || null,
         kills: pickN(p, "kills"),
         deaths: pickN(p, "deaths"),
+        loadout: pickS(p, "loadout", "weapon"),
+        x: hasPos ? x : null,
+        y: hasPos ? y : null,
+        z: hasPos ? z : null,
       });
     }
     rows.sort((a, b) => a.name.localeCompare(b.name));
