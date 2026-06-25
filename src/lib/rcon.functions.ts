@@ -12,6 +12,10 @@ export type RconPlayer = {
   level: number | null;
   kills: number;
   deaths: number;
+  loadout: string | null;
+  x: number | null;
+  y: number | null;
+  z: number | null;
 };
 
 export type RconPlayersResult = {
