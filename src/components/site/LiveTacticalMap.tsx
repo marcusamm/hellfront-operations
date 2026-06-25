@@ -76,6 +76,9 @@ export function LiveTacticalMap() {
   const players: RconPlayer[] = pl.data?.status === "ok" ? pl.data.players : [];
   const teams = useMemo(() => groupByTeam(players), [players]);
 
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = selectedId ? (players.find((p) => p.player_id === selectedId) ?? null) : null;
+
   const allied = gs.data?.status === "ok" ? (gs.data.allied_score ?? 0) : 0;
   const axis = gs.data?.status === "ok" ? (gs.data.axis_score ?? 0) : 0;
 
