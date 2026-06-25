@@ -159,10 +159,28 @@ export function LiveTacticalMap() {
           </div>
         ) : (
           <div className="max-h-[60vh] overflow-y-auto p-2">
-            <TeamBlock label="Allies" tone="allied" team={teams.allies} />
-            <TeamBlock label="Axis" tone="axis" team={teams.axis} />
+            <TeamBlock
+              label="Allies"
+              tone="allied"
+              team={teams.allies}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+            <TeamBlock
+              label="Axis"
+              tone="axis"
+              team={teams.axis}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
             {teams.other.length > 0 && (
-              <TeamBlock label="Unassigned" tone="neutral" team={teams.other} />
+              <TeamBlock
+                label="Unassigned"
+                tone="neutral"
+                team={teams.other}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
             )}
             {players.length === 0 && (
               <div className="p-3 text-sm text-muted-foreground">Server is empty.</div>
@@ -170,6 +188,13 @@ export function LiveTacticalMap() {
           </div>
         )}
       </div>
+
+      {/* Selected player actions span full width below */}
+      {selected && (
+        <div className="lg:col-span-2">
+          <PlayerActionsPanel p={selected} onClose={() => setSelectedId(null)} />
+        </div>
+      )}
     </div>
   );
 }
