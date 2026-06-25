@@ -144,8 +144,9 @@ function MembersPage() {
                 show={can("admin")}
                 index="06"
                 title="Admin Panel"
-                desc="Edit site content — servers, FAQ, and more."
+                desc="Live tactical map and site-wide admin tools."
                 cta="Open admin"
+                to="/admin"
               />
 
             </div>
