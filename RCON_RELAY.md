@@ -106,20 +106,35 @@ PORT=8080
 
 The relay is just a Node.js app, so it runs on Windows Server or Windows 10/11.
 
-### Option A: Run Node directly
+### Easiest: the included setup script
 
-1. Install **Node.js 20 LTS** from https://nodejs.org.
-2. Create a folder, e.g. `C:\rcon-relay`.
-3. Put `server.js`, `package.json`, and `.env` in it.
-4. Open PowerShell as Administrator:
+1. Install **Node.js 22 LTS or newer** from https://nodejs.org.
+2. Copy the whole `rcon-relay/` folder onto the VPS (e.g. `C:\rcon-relay`).
+3. Open PowerShell in that folder and run:
 
 ```powershell
 cd C:\rcon-relay
-npm install
-node server.js
+.\setup.ps1
 ```
 
-The relay listens on `http://localhost:8080`.
+The script will:
+- ask you for your GTX RCON host / port / password
+- generate a long random `RELAY_TOKEN` and print it (save it — you'll paste it into the website as `RCON_RELAY_TOKEN`)
+- write `.env`
+- run `npm install`
+- start the relay on `http://localhost:8080`
+
+To start it again later: `npm start` (reads `.env` automatically).
+
+### Manual alternative
+
+```powershell
+cd C:\rcon-relay
+copy .env.example .env
+notepad .env          # fill in the values
+npm install
+npm start
+```
 
 ### Option B: Docker on Windows
 
