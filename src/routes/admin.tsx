@@ -1,10 +1,9 @@
 import { createFileRoute, redirect, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { SiteHeader, MobileStickyCTA } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
-import { getLiveMapUrl } from "@/lib/live-map.functions";
+import { LiveTacticalMap } from "@/components/site/LiveTacticalMap";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ context }) => {
