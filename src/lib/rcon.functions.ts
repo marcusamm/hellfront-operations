@@ -210,6 +210,17 @@ export const addVipPlayer = createServerFn({ method: "POST" })
     });
   });
 
+export const watchPlayer = createServerFn({ method: "POST" })
+  .inputValidator((d: { player_id: string; player_name: string; reason: string }) => d)
+  .handler(async ({ data }): Promise<RconActionResult> => {
+    return runAction("/api/watch_player", {
+      player_id: data.player_id,
+      player_name: data.player_name,
+      reason: data.reason,
+      by: "ObjFirst Web",
+    });
+  });
+
 // --- gamestate & map info -------------------------------------------------
 
 export type GameStateResult = {
