@@ -197,7 +197,7 @@ export type GameStateResult = {
   num_allied_players?: number;
   num_axis_players?: number;
   time_remaining?: string;
-  raw?: Record<string, unknown>;
+  raw?: unknown;
 };
 
 export const getGameState = createServerFn({ method: "GET" }).handler(
@@ -262,7 +262,7 @@ export const changeMap = createServerFn({ method: "POST" })
 export type RawCommandResult = {
   ok: boolean;
   message: string;
-  data?: unknown;
+  data?: string;
 };
 
 export const runRawCommand = createServerFn({ method: "POST" })
