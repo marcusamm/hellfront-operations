@@ -62,15 +62,33 @@ export const ROLE_CAPABILITIES: { role: string; grants: Capability[] }[] = [
 
 /** Compute capabilities from a list of Discord role names. */
 export function capabilitiesFromRoleNames(roleNames: string[]): Capability[] {
-  const have = new Set(roleNames.map((n) => n.toLowerCase()));
+  const lower = roleNames.map((n) => n.toLowerCase());
+  const have = new Set(lower);
   const caps = new Set<Capability>();
   for (const { role, grants } of ROLE_CAPABILITIES) {
     if (have.has(role.toLowerCase())) {
       for (const g of grants) caps.add(g);
     }
   }
+  // Any role that contains the word "admin" or "mod" as a token grants
+  // RCON + full admin caps. Matches "OBJ 1st Admin", "Head Mod", etc.,
+  // but NOT "Moderator-in-Training" substrings that aren't real tokens.
+  const tokenize = (s: string) => s.split(/[^a-z0-9]+/i).filter(Boolean);
+  const hasAdminToken = lower.some((n) => tokenize(n).includes("admin"));
+  const hasModToken = lower.some((n) => tokenize(n).includes("mod"));
+  if (hasAdminToken) {
+    for (const g of ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] as Capability[]) {
+      caps.add(g);
+    }
+  }
+  if (hasModToken) {
+    for (const g of ["manageOps", "members", "rsvp", "stats", "rcon"] as Capability[]) {
+      caps.add(g);
+    }
+  }
   return [...caps];
 }
+
 
 /** True if the user exists and has the given capability. */
 export function userCan(user: SessionUser | null | undefined, cap: Capability): boolean {
