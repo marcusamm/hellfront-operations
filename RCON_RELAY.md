@@ -97,6 +97,49 @@ PORT=8080
 
 ---
 
+## Windows VPS setup
+
+The relay is just a Node.js app, so it runs on Windows Server or Windows 10/11.
+
+### Option A: Run Node directly
+
+1. Install **Node.js 20 LTS** from https://nodejs.org.
+2. Create a folder, e.g. `C:\rcon-relay`.
+3. Put `server.js`, `package.json`, and `.env` in it.
+4. Open PowerShell as Administrator:
+
+```powershell
+cd C:\rcon-relay
+npm install
+node server.js
+```
+
+The relay listens on `http://localhost:8080`.
+
+### Option B: Docker on Windows
+
+Install Docker Desktop and use the Linux `docker-compose.yml` above. It works, but it is heavier than running Node directly.
+
+### HTTPS on Windows
+
+Pick one:
+
+- **Caddy for Windows** — download `caddy.exe`, place `Caddyfile` in the same folder, run `caddy run`. Auto-HTTPS.
+- **IIS reverse proxy** — install the URL Rewrite + Application Request Routing modules, create a site for `rcon.yourdomain.com`, and reverse-proxy to `http://localhost:8080`.
+- **Cloudflare Tunnel** — easiest if your domain is on Cloudflare. One command: `cloudflared tunnel --url http://localhost:8080`.
+
+### Auto-start on Windows
+
+Use **nssm** (the Non-Sucking Service Manager) to run `node server.js` as a Windows service so it survives reboots:
+
+```powershell
+nssm install RCONRelay
+# point Path to node.exe and Arguments to C:\rcon-relay\server.js
+nssm start RCONRelay
+```
+
+---
+
 ## Switching the site over
 
 Once your relay is running and reachable on HTTPS:
