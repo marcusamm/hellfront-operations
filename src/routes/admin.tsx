@@ -30,7 +30,7 @@ function AdminPage() {
         <div className="mx-auto max-w-7xl px-5 pt-16 pb-10">
           <div className="flex items-center gap-3">
             <span className="h-px w-12 bg-rust" />
-            <span className="eyebrow text-rust">RESTRICTED · ADMIN</span>
+            <span className="eyebrow text-rust">RESTRICTED · ADMIN &amp; MOD</span>
           </div>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
             <div>
