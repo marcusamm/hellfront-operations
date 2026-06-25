@@ -158,15 +158,16 @@ export async function apiPost(path: string, body: unknown): Promise<unknown | nu
   if (!useRelay() && !sessionCookie && !(await login())) return null;
   if (useRelay() && !(await login())) return null;
 
+  const bodyStr = JSON.stringify(body ?? {});
   const doFetch = () =>
     fetch(`${base}${path}`, {
       method: "POST",
       headers: {
-        ...authHeaders(),
+        ...authHeaders("POST", path, bodyStr),
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(body ?? {}),
+      body: bodyStr,
     });
 
   let res = await doFetch().catch(() => null);
