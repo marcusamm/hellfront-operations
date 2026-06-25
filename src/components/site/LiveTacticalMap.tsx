@@ -222,12 +222,16 @@ function MapCanvas({
   players,
   allied,
   axis,
+  selectedId,
+  onSelect,
 }: {
   map: HllMap | null;
   geo: MapGeo | null;
   players: RconPlayer[];
   allied: number;
   axis: number;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }) {
   const [broken, setBroken] = useState(false);
 
@@ -250,7 +254,14 @@ function MapCanvas({
         preserveAspectRatio="none"
       >
         {geo && <SectorOverlay geo={geo} allied={allied} axis={axis} />}
-        {geo && <PlayerMarkers geo={geo} players={players} />}
+        {geo && (
+          <PlayerMarkers
+            geo={geo}
+            players={players}
+            selectedId={selectedId}
+            onSelect={onSelect}
+          />
+        )}
       </svg>
     </div>
   );
