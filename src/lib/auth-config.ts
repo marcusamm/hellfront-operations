@@ -44,9 +44,12 @@ export type SessionUser = {
 // ---------------------------------------------------------------------------
 export const ROLE_CAPABILITIES: { role: string; grants: Capability[] }[] = [
   { role: "Admin", grants: ["admin", "manageOps", "members", "rsvp", "stats"] },
-  { role: "Officer", grants: ["manageOps", "members", "rsvp", "stats"] },
-  { role: "SLB", grants: ["members", "rsvp", "stats"] },
-  { role: "Member", grants: ["members", "rsvp", "stats"] },
+  { role: "Mod", grants: ["manageOps", "members", "rsvp", "stats"] },
+  { role: "Plat member", grants: ["members", "rsvp", "stats"] },
+  { role: "Gold member", grants: ["members", "rsvp", "stats"] },
+  { role: "Bronze member", grants: ["members", "rsvp", "stats"] },
+  { role: "member", grants: ["members", "rsvp", "stats"] },
+  { role: "squad mate", grants: ["members", "rsvp", "stats"] },
 ];
 
 /** Compute capabilities from a list of Discord role names. */
