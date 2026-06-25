@@ -12,6 +12,13 @@ const env = {
   HLL_RCON_PORT: Number(process.env.HLL_RCON_PORT || 27015),
   HLL_RCON_PASSWORD: process.env.HLL_RCON_PASSWORD,
   RELAY_TOKEN: process.env.RELAY_TOKEN,
+  // Optional HMAC signing secret. When set, every request must include
+  // x-relay-timestamp, x-relay-nonce, and x-relay-signature headers.
+  RELAY_SIGNING_SECRET: process.env.RELAY_SIGNING_SECRET || "",
+  // Comma-separated IPs / CIDR prefixes allowed to call the relay.
+  // Empty = allow any (still gated by token + signature).
+  IP_ALLOWLIST: (process.env.IP_ALLOWLIST || "").split(",").map((s) => s.trim()).filter(Boolean),
+  RATE_LIMIT_PER_MINUTE: Number(process.env.RATE_LIMIT_PER_MINUTE || 120),
   DATABASE_PATH: process.env.DATABASE_PATH || "./relay.db",
   PORT: Number(process.env.PORT || 8080),
 };
