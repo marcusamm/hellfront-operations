@@ -120,7 +120,7 @@ async function apiGet(path: string): Promise<unknown | null> {
 
   const doFetch = () =>
     fetch(`${base}${path}`, {
-      headers: { ...authHeaders(), Accept: "application/json" },
+      headers: { ...authHeaders("GET", path, ""), Accept: "application/json" },
     });
 
   let res = await doFetch().catch((e) => {
