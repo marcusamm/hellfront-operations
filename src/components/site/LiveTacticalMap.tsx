@@ -382,7 +382,17 @@ function isLeader(role: string | null): "cmd" | "sl" | null {
   return null;
 }
 
-function PlayerMarkers({ geo, players }: { geo: MapGeo; players: RconPlayer[] }) {
+function PlayerMarkers({
+  geo,
+  players,
+  selectedId,
+  onSelect,
+}: {
+  geo: MapGeo;
+  players: RconPlayer[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const dots = players
     .filter((p) => p.x !== null && p.y !== null)
     .map((p) => {
@@ -392,23 +402,31 @@ function PlayerMarkers({ geo, players }: { geo: MapGeo; players: RconPlayer[] })
 
   return (
     <g>
-      {dots.map(({ p, px, py }) => (
-        <circle
-          key={p.player_id}
-          cx={px}
-          cy={py}
-          r={6}
-          fill={teamColor(p.team)}
-          stroke="#111"
-          strokeWidth={1.5}
-        >
-          <title>
-            {p.name}
-            {p.role ? ` · ${p.role}` : ""}
-            {p.unit_name ? ` · ${p.unit_name}` : ""}
-          </title>
-        </circle>
-      ))}
+      {dots.map(({ p, px, py }) => {
+        const isSelected = p.player_id === selectedId;
+        return (
+          <circle
+            key={p.player_id}
+            cx={px}
+            cy={py}
+            r={isSelected ? 9 : 6}
+            fill={teamColor(p.team)}
+            stroke={isSelected ? "#facc15" : "#111"}
+            strokeWidth={isSelected ? 3 : 1.5}
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(p.player_id);
+            }}
+          >
+            <title>
+              {p.name}
+              {p.role ? ` · ${p.role}` : ""}
+              {p.unit_name ? ` · ${p.unit_name}` : ""}
+            </title>
+          </circle>
+        );
+      })}
       {dots.map(({ p, px, py }) => {
         const kind = isLeader(p.role);
         if (!kind) return null;
