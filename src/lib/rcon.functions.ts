@@ -16,6 +16,10 @@ export type RconPlayer = {
   x: number | null;
   y: number | null;
   z: number | null;
+  combat: number;
+  offense: number;
+  defense: number;
+  support: number;
 };
 
 export type RconPlayersResult = {
