@@ -15,8 +15,18 @@ function env(key: string): string | undefined {
 }
 
 function baseUrl(): string | null {
+  // Prefer the self-hosted RCON relay when configured. The relay is a small
+  // service you run on your own VPS that speaks the raw HLL RCON TCP
+  // protocol and exposes the SAME `/api/...` paths CRCON does, secured by a
+  // bearer token. When RCON_RELAY_URL is set, we skip CRCON entirely.
+  const relay = env("RCON_RELAY_URL");
+  if (relay) return relay.replace(/\/+$/, "");
   const u = env("CRCON_URL");
   return u ? u.replace(/\/+$/, "") : null;
+}
+
+function useRelay(): boolean {
+  return !!env("RCON_RELAY_URL");
 }
 
 let diag: string[] = [];
@@ -26,6 +36,14 @@ const note = () => diag.join("  ·  ");
 let sessionCookie: string | null = null;
 
 async function login(): Promise<boolean> {
+  // Relay uses a static bearer token — no login round-trip.
+  if (useRelay()) {
+    if (!env("RCON_RELAY_TOKEN")) {
+      diag.push("missing RCON_RELAY_TOKEN");
+      return false;
+    }
+    return true;
+  }
   const base = baseUrl();
   const user = env("CRCON_USER");
   const pass = env("CRCON_PASSWORD");
@@ -64,14 +82,22 @@ async function login(): Promise<boolean> {
   }
 }
 
+function authHeaders(): Record<string, string> {
+  if (useRelay()) {
+    return { Authorization: `Bearer ${env("RCON_RELAY_TOKEN") ?? ""}` };
+  }
+  return { Cookie: sessionCookie as string };
+}
+
 async function apiGet(path: string): Promise<unknown | null> {
   const base = baseUrl();
   if (!base) return null;
-  if (!sessionCookie && !(await login())) return null;
+  if (!useRelay() && !sessionCookie && !(await login())) return null;
+  if (useRelay() && !(await login())) return null;
 
   const doFetch = () =>
     fetch(`${base}${path}`, {
-      headers: { Cookie: sessionCookie as string, Accept: "application/json" },
+      headers: { ...authHeaders(), Accept: "application/json" },
     });
 
   let res = await doFetch().catch((e) => {
@@ -80,7 +106,7 @@ async function apiGet(path: string): Promise<unknown | null> {
   });
   if (!res) return null;
 
-  if (res.status === 401 || res.status === 403) {
+  if (!useRelay() && (res.status === 401 || res.status === 403)) {
     sessionCookie = null;
     if (!(await login())) return null;
     res = await doFetch().catch(() => null);
@@ -106,13 +132,14 @@ async function apiGet(path: string): Promise<unknown | null> {
 export async function apiPost(path: string, body: unknown): Promise<unknown | null> {
   const base = baseUrl();
   if (!base) return null;
-  if (!sessionCookie && !(await login())) return null;
+  if (!useRelay() && !sessionCookie && !(await login())) return null;
+  if (useRelay() && !(await login())) return null;
 
   const doFetch = () =>
     fetch(`${base}${path}`, {
       method: "POST",
       headers: {
-        Cookie: sessionCookie as string,
+        ...authHeaders(),
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -121,7 +148,7 @@ export async function apiPost(path: string, body: unknown): Promise<unknown | nu
 
   let res = await doFetch().catch(() => null);
   if (!res) return null;
-  if (res.status === 401 || res.status === 403) {
+  if (!useRelay() && (res.status === 401 || res.status === 403)) {
     sessionCookie = null;
     if (!(await login())) return null;
     res = await doFetch().catch(() => null);
@@ -135,6 +162,7 @@ export async function apiPost(path: string, body: unknown): Promise<unknown | nu
     return { failed: true, error: "non-JSON response" };
   }
 }
+
 
 export async function apiGetRaw(path: string): Promise<unknown | null> {
   return apiGet(path);
