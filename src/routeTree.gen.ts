@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SlbRouteImport } from './routes/slb'
+import { Route as RconRouteImport } from './routes/rcon'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
@@ -26,6 +27,11 @@ const StatsRoute = StatsRouteImport.update({
 const SlbRoute = SlbRouteImport.update({
   id: '/slb',
   path: '/slb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RconRoute = RconRouteImport.update({
+  id: '/rcon',
+  path: '/rcon',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembersRoute = MembersRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/auth/logout': typeof AuthLogoutRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/auth/logout': typeof AuthLogoutRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
+  '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/auth/logout': typeof AuthLogoutRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/members'
+    | '/rcon'
     | '/slb'
     | '/stats'
     | '/auth/logout'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/members'
+    | '/rcon'
     | '/slb'
     | '/stats'
     | '/auth/logout'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/members'
+    | '/rcon'
     | '/slb'
     | '/stats'
     | '/auth/logout'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   MembersRoute: typeof MembersRoute
+  RconRoute: typeof RconRoute
   SlbRoute: typeof SlbRoute
   StatsRoute: typeof StatsRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/slb'
       fullPath: '/slb'
       preLoaderRoute: typeof SlbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rcon': {
+      id: '/rcon'
+      path: '/rcon'
+      fullPath: '/rcon'
+      preLoaderRoute: typeof RconRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/members': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   MembersRoute: MembersRoute,
+  RconRoute: RconRoute,
   SlbRoute: SlbRoute,
   StatsRoute: StatsRoute,
   AuthLogoutRoute: AuthLogoutRoute,
@@ -208,13 +229,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

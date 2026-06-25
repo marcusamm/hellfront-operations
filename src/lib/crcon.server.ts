@@ -103,6 +103,43 @@ async function apiGet(path: string): Promise<unknown | null> {
   }
 }
 
+export async function apiPost(path: string, body: unknown): Promise<unknown | null> {
+  const base = baseUrl();
+  if (!base) return null;
+  if (!sessionCookie && !(await login())) return null;
+
+  const doFetch = () =>
+    fetch(`${base}${path}`, {
+      method: "POST",
+      headers: {
+        Cookie: sessionCookie as string,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body ?? {}),
+    });
+
+  let res = await doFetch().catch(() => null);
+  if (!res) return null;
+  if (res.status === 401 || res.status === 403) {
+    sessionCookie = null;
+    if (!(await login())) return null;
+    res = await doFetch().catch(() => null);
+    if (!res) return null;
+  }
+  if (!res.ok) return { failed: true, error: `HTTP ${res.status}` };
+  try {
+    const json = (await res.json()) as { result?: unknown; failed?: boolean; error?: unknown };
+    return json;
+  } catch {
+    return { failed: true, error: "non-JSON response" };
+  }
+}
+
+export async function apiGetRaw(path: string): Promise<unknown | null> {
+  return apiGet(path);
+}
+
 // --- tolerant field helpers ------------------------------------------------
 function pickNum(o: Record<string, unknown>, keys: string[]): number {
   for (const k of keys) {

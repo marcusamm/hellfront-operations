@@ -13,9 +13,16 @@
  *  - rsvp      : RSVP to operations
  *  - stats     : view past-operation performance stats
  */
-export type Capability = "admin" | "manageOps" | "members" | "rsvp" | "stats";
+export type Capability = "admin" | "manageOps" | "members" | "rsvp" | "stats" | "rcon";
 
-export const ALL_CAPABILITIES: Capability[] = ["admin", "manageOps", "members", "rsvp", "stats"];
+export const ALL_CAPABILITIES: Capability[] = [
+  "admin",
+  "manageOps",
+  "members",
+  "rsvp",
+  "stats",
+  "rcon",
+];
 
 /** The logged-in user, as stored in the (encrypted) session cookie. */
 export type SessionUser = {
@@ -43,14 +50,15 @@ export type SessionUser = {
 // A user gets the UNION of capabilities from every matching role.
 // ---------------------------------------------------------------------------
 export const ROLE_CAPABILITIES: { role: string; grants: Capability[] }[] = [
-  { role: "Admin", grants: ["admin", "manageOps", "members", "rsvp", "stats"] },
-  { role: "Mod", grants: ["manageOps", "members", "rsvp", "stats"] },
+  { role: "Admin", grants: ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] },
+  { role: "Mod", grants: ["manageOps", "members", "rsvp", "stats", "rcon"] },
   { role: "Plat member", grants: ["members", "rsvp", "stats"] },
   { role: "Gold member", grants: ["members", "rsvp", "stats"] },
   { role: "Bronze member", grants: ["members", "rsvp", "stats"] },
   { role: "member", grants: ["members", "rsvp", "stats"] },
   { role: "squad mate", grants: ["members", "rsvp", "stats"] },
 ];
+
 
 /** Compute capabilities from a list of Discord role names. */
 export function capabilitiesFromRoleNames(roleNames: string[]): Capability[] {

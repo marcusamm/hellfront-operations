@@ -133,12 +133,21 @@ function MembersPage() {
                 cta="Manage operations"
               />
               <MemberCard
-                show={can("admin")}
+                show={can("rcon")}
                 index="05"
+                title="RCON Console"
+                desc="Live game-server control: message, kick, ban, broadcast, welcome."
+                cta="Open RCON"
+                to="/rcon"
+              />
+              <MemberCard
+                show={can("admin")}
+                index="06"
                 title="Admin Panel"
                 desc="Edit site content — servers, FAQ, and more."
                 cta="Open admin"
               />
+
             </div>
           )}
         </div>
