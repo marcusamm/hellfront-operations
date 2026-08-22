@@ -24,7 +24,15 @@ function Tile({ label, value, highlight }: { label: string; value: string; highl
   );
 }
 
-function Notice({ title, body }: { title: string; body: string }) {
+function Notice({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: { href: string; label: string };
+}) {
   return (
     <div className="border hairline bg-card p-6">
       <div className="flex items-center gap-3">
@@ -33,6 +41,15 @@ function Notice({ title, body }: { title: string; body: string }) {
       </div>
       <h3 className="mt-3 text-xl text-foreground">{title}</h3>
       <p className="mt-2 max-w-lg text-sm text-muted-foreground">{body}</p>
+      {action && (
+        <a
+          href={action.href}
+          className="mt-5 inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
+        >
+          <SteamIcon className="h-4 w-4" />
+          {action.label}
+        </a>
+      )}
     </div>
   );
 }
