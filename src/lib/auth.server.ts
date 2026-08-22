@@ -206,3 +206,31 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     isMember: member !== null,
   };
 }
+
+// --- Steam sign-in / linking ------------------------------------------------
+/**
+ * Attach a verified Steam64 id to the current session. If nobody is signed in
+ * with Discord, this creates a Steam-only session that can view its own stats
+ * but has no member/staff capabilities.
+ */
+export async function applySteamLogin(
+  steamId: string,
+  profile: { name: string | null; avatarUrl: string | null },
+): Promise<SessionUser> {
+  const existing = await getSessionUser();
+  const user: SessionUser = existing
+    ? { ...existing, steamId }
+    : {
+        id: `steam:${steamId}`,
+        username: profile.name || `Steam ${steamId.slice(-4)}`,
+        avatarUrl: profile.avatarUrl,
+        roleIds: [],
+        roleNames: [],
+        capabilities: ["stats"],
+        isMember: false,
+        steamId,
+        provider: "steam",
+      };
+  await setSessionUser(user);
+  return user;
+}

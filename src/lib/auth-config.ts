@@ -40,6 +40,10 @@ export type SessionUser = {
   capabilities: Capability[];
   /** Whether the user is actually a member of your Discord server. */
   isMember: boolean;
+  /** Verified Steam64 id, set when the user signed in with / linked Steam. */
+  steamId?: string | null;
+  /** Which provider created this session. */
+  provider?: "discord" | "steam";
 };
 
 // ---------------------------------------------------------------------------

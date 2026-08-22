@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
+import { SteamIcon } from "@/components/site/SteamIcon";
 
 type LoginSearch = { error?: string };
 
@@ -10,6 +11,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   oauth: "We couldn't complete the Discord sign-in. Please try again.",
   denied: "Discord authorization was cancelled.",
   config: "Discord login isn't set up yet — add your credentials in .env (see DISCORD_SETUP.md).",
+  steam: "We couldn't verify your Steam sign-in. Please try again.",
 };
 
 export const Route = createFileRoute("/login")({
@@ -19,7 +21,7 @@ export const Route = createFileRoute("/login")({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(currentUserQueryOptions);
     if (user) {
-      throw redirect({ to: "/members" });
+      throw redirect({ to: user.provider === "steam" ? "/stats" : "/members" });
     }
   },
   head: () => ({
@@ -51,8 +53,8 @@ function LoginPage() {
             Sign in to <span className="text-khaki">command</span>
           </h1>
           <p className="mt-5 text-muted-foreground">
-            Authenticate with Discord. Your access on the site is determined by the roles you hold
-            in our Discord server.
+            Authenticate with Discord for member access, or sign in with Steam to pull up your own
+            performance stats from our servers.
           </p>
 
           {error && (
@@ -68,6 +70,17 @@ function LoginPage() {
             <DiscordIcon className="h-4 w-4" />
             Sign in with Discord
           </a>
+
+          <a
+            href="/auth/steam/login?next=/stats"
+            className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
+          >
+            <SteamIcon className="h-4 w-4" />
+            Sign in with Steam
+          </a>
+          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Steam sign-in is for personal stats only · Discord roles unlock member areas
+          </p>
 
           <div className="mt-12 border hairline bg-card/60 p-6">
             <div className="flex items-center justify-between border-b hairline pb-3">

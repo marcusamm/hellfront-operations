@@ -1,5 +1,6 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { getMyStats } from "@/lib/me-stats.functions";
+import { SteamIcon } from "@/components/site/SteamIcon";
 
 const myStatsQueryOptions = queryOptions({
   queryKey: ["crcon", "myStats"],
@@ -24,7 +25,15 @@ function Tile({ label, value, highlight }: { label: string; value: string; highl
   );
 }
 
-function Notice({ title, body }: { title: string; body: string }) {
+function Notice({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: { href: string; label: string };
+}) {
   return (
     <div className="border hairline bg-card p-6">
       <div className="flex items-center gap-3">
@@ -33,6 +42,15 @@ function Notice({ title, body }: { title: string; body: string }) {
       </div>
       <h3 className="mt-3 text-xl text-foreground">{title}</h3>
       <p className="mt-2 max-w-lg text-sm text-muted-foreground">{body}</p>
+      {action && (
+        <a
+          href={action.href}
+          className="mt-5 inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
+        >
+          <SteamIcon className="h-4 w-4" />
+          {action.label}
+        </a>
+      )}
     </div>
   );
 }
@@ -48,19 +66,21 @@ export function MyStatsPanel() {
     );
   }
 
-  if (data.status === "not_member") {
+  if (data.status === "anon") {
     return (
       <Notice
-        title="Whoops — you're not a member yet"
-        body="Head over to our Discord and join up, then come back and sign in to see your stats."
+        title="Sign in with Steam to see your stats"
+        body="One click through Steam — we only read your Steam ID, never your password."
+        action={{ href: "/auth/steam/login?next=/stats", label: "Sign in through Steam" }}
       />
     );
   }
   if (data.status === "no_steam") {
     return (
       <Notice
-        title="Link your Steam ID"
-        body="We couldn't find your Steam ID. Post your 17-digit Steam64 ID in our Discord steam-id channel and your stats will appear here automatically."
+        title="Link your Steam account"
+        body="We couldn't match your account to a Steam ID. Link it through Steam and your stats will appear here instantly."
+        action={{ href: "/auth/steam/login?next=/stats", label: "Link Steam account" }}
       />
     );
   }
