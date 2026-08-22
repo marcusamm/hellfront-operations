@@ -512,7 +512,7 @@ function Doctrine() {
 
 function VietnamTeaser() {
   return (
-    <section className="relative isolate overflow-hidden border-b hairline bg-card/20">
+    <section id="vietnam" className="relative isolate overflow-hidden border-b hairline bg-card/20">
       <img
         src="/maps/vietnam-hero.jpg"
         alt="Hell Let Loose Vietnam jungle patrol at dawn"
