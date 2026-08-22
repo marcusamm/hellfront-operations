@@ -16,7 +16,6 @@ import {
   getServerRoster,
 } from "@/lib/server-status.functions";
 import type { ServerBrief } from "@/lib/stats-types";
-import { getGuildStats } from "@/lib/discord.functions";
 
 const serverStatusQueryOptions = queryOptions({
   queryKey: ["crcon", "serverStatus"],
@@ -28,13 +27,6 @@ const serverStatusQueryOptions = queryOptions({
 const allServersQueryOptions = queryOptions({
   queryKey: ["crcon", "allServers"],
   queryFn: () => getAllServerStatus(),
-  staleTime: 60_000,
-  refetchInterval: 60_000,
-});
-
-const guildStatsQueryOptions = queryOptions({
-  queryKey: ["discord", "guildStats"],
-  queryFn: () => getGuildStats(),
   staleTime: 60_000,
   refetchInterval: 60_000,
 });
@@ -62,7 +54,6 @@ export const Route = createFileRoute("/")({
     Promise.all([
       context.queryClient.ensureQueryData(serverStatusQueryOptions),
       context.queryClient.ensureQueryData(allServersQueryOptions),
-      context.queryClient.ensureQueryData(guildStatsQueryOptions),
     ]),
   component: Index,
 });
@@ -173,7 +164,6 @@ function Hero() {
 /* ------------------------------------------------- live bento (stats + server) */
 
 function CommandBento() {
-  const { data: guild } = useSuspenseQuery(guildStatsQueryOptions);
   const { data: fleet } = useSuspenseQuery(allServersQueryOptions);
   const fmt = (n: number | null) => (n == null ? "—" : n.toLocaleString("en-US"));
   const servers = fleet.servers;
@@ -217,7 +207,10 @@ function CommandBento() {
               ) : (
                 <>
                   <div className="mt-8 flex items-end gap-3">
-                    <div className="stencil tnum text-6xl leading-none text-khaki md:text-7xl">
+                    <div
+                      className="stencil tnum text-6xl leading-none text-khaki md:text-7xl"
+                      suppressHydrationWarning
+                    >
                       {fleet.totalPlayers}
                     </div>
                     <div className="pb-2 font-mono text-sm text-muted-foreground">
@@ -248,8 +241,8 @@ function CommandBento() {
             </div>
           </div>
 
-          <BentoStat v={fmt(guild.onlineCount)} l="Members online" accent />
-          <BentoStat v={fmt(guild.memberCount)} l="Discord members" />
+          <BentoStat v={fmt(fleet.totalPlayers)} l="Players in-game" accent />
+          <BentoStat v={fmt(fleet.totalSlots)} l="Total slots" />
 
           <div className="ink-edge relative overflow-hidden bg-olive-deep/40 p-5">
             <div className="halftone absolute inset-0 opacity-50" />
