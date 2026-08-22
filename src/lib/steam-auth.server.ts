@@ -71,21 +71,45 @@ export async function verifySteamCallback(url: URL): Promise<string | null> {
 
 export type SteamProfile = { name: string | null; avatarUrl: string | null };
 
-/** Optional profile lookup (needs STEAM_API_KEY). Never throws. */
+function xmlTag(xml: string, tag: string): string | null {
+  const m = xml.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</${tag}>`, "i"));
+  const v = m?.[1]?.trim();
+  return v && v.length > 0 ? v : null;
+}
+
+/**
+ * Public profile scrape — works with NO API key. Steam exposes the community
+ * profile as XML, which carries the persona name and avatar. Never throws.
+ */
+async function fetchSteamProfileXml(steamId: string): Promise<SteamProfile> {
+  try {
+    const res = await fetch(`https://steamcommunity.com/profiles/${steamId}/?xml=1`, {
+      headers: { "User-Agent": "objective-first-site/1.0" },
+    });
+    if (!res.ok) return { name: null, avatarUrl: null };
+    const xml = await res.text();
+    return { name: xmlTag(xml, "steamID"), avatarUrl: xmlTag(xml, "avatarFull") };
+  } catch {
+    return { name: null, avatarUrl: null };
+  }
+}
+
+/** Profile lookup: Steam Web API when a key exists, public XML otherwise. */
 export async function fetchSteamProfile(steamId: string): Promise<SteamProfile> {
   const key = env("STEAM_API_KEY");
-  if (!key) return { name: null, avatarUrl: null };
+  if (!key) return fetchSteamProfileXml(steamId);
   try {
     const res = await fetch(
       `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${key}&steamids=${steamId}`,
     );
-    if (!res.ok) return { name: null, avatarUrl: null };
+    if (!res.ok) return fetchSteamProfileXml(steamId);
     const json = (await res.json()) as {
       response?: { players?: { personaname?: string; avatarfull?: string }[] };
     };
     const p = json.response?.players?.[0];
-    return { name: p?.personaname ?? null, avatarUrl: p?.avatarfull ?? null };
+    if (!p?.personaname) return fetchSteamProfileXml(steamId);
+    return { name: p.personaname, avatarUrl: p.avatarfull ?? null };
   } catch {
-    return { name: null, avatarUrl: null };
+    return fetchSteamProfileXml(steamId);
   }
 }
