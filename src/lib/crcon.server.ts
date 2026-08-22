@@ -336,112 +336,222 @@ export async function buildLeaderboard(games = 30, topN = 25): Promise<Leaderboa
 }
 
 // --- lifetime (all-time) per-player aggregation ----------------------------
-// CRCON exposes no lifetime aggregate endpoint, so we walk every recorded map
-// scoreboard. That's thousands of requests, so it's done incrementally with a
-// per-call budget and kept in memory; coverage grows as the site is used.
+// CRCON's `get_date_scoreboard` aggregates every player's stats over a date
+// range in ONE request, so we walk the whole archive in date windows instead of
+// fetching thousands of individual match scoreboards. Windows are processed
+// newest-first with a per-request budget and cached in memory, so the first
+// view is fast and coverage grows as the page is used.
 type LifeAcc = {
   name: string;
-  games: number;
   kills: number;
   deaths: number;
+  teamkills: number;
+  seconds: number;
   combat: number;
   offense: number;
   defense: number;
   support: number;
-  seconds: number;
 };
 
-let lifeIds: number[] | null = null;
-const lifeDone = new Set<number>();
+const CHUNK_DAYS = 3;
+const CHUNK_SECS = CHUNK_DAYS * 86400;
+const LIVE_TTL_MS = 5 * 60 * 1000;
+
+let archiveStart: number | null = null;
+let chunkCount = 0;
+const chunkDone = new Set<number>();
 const lifeAcc = new Map<string, LifeAcc>();
+let liveAcc = new Map<string, LifeAcc>();
+let liveAt = 0;
 
-async function loadAllMapIds(): Promise<number[]> {
-  if (lifeIds) return lifeIds;
-  const ids: number[] = [];
-  const pageSize = 200;
-  for (let page = 1; page <= 40; page++) {
-    const res = await apiGet(`/api/get_scoreboard_maps?limit=${pageSize}&page=${page}`);
-    if (res == null) break;
-    const maps = asArray(res, "maps", "scoreboard_maps");
-    if (maps.length === 0) break;
-    ids.push(...maps.map((m) => pickNum(m, ["id", "map_id"])).filter((i) => i > 0));
-    if (maps.length < pageSize) break;
-  }
-  lifeIds = ids;
-  return ids;
-}
-
-async function ensureLifetime(budget = 160): Promise<void> {
-  const ids = await loadAllMapIds();
-  const todo = ids.filter((id) => !lifeDone.has(id)).slice(0, budget);
-  const CONCURRENCY = 8;
-  for (let i = 0; i < todo.length; i += CONCURRENCY) {
-    const batch = todo.slice(i, i + CONCURRENCY);
-    const results = await Promise.all(batch.map((id) => getMapPlayers(id)));
-    batch.forEach((id, k) => {
-      lifeDone.add(id);
-      for (const p of results[k] ?? []) {
-        const pid = pickStr(p, ["player_id", "steam_id_64", "playerId", "id"]);
-        if (!pid) continue;
-        const a =
-          lifeAcc.get(pid) ??
-          ({
-            name: "",
-            games: 0,
-            kills: 0,
-            deaths: 0,
-            combat: 0,
-            offense: 0,
-            defense: 0,
-            support: 0,
-            seconds: 0,
-          } satisfies LifeAcc);
-        a.name = pickStr(p, ["player", "name", "player_name"]) || a.name || pid;
-        a.games += 1;
-        a.kills += pickNum(p, ["kills"]);
-        a.deaths += pickNum(p, ["deaths"]);
-        a.combat += pickNum(p, ["combat", "combat_score"]);
-        a.offense += pickNum(p, ["offense", "offense_score"]);
-        a.defense += pickNum(p, ["defense", "defense_score"]);
-        a.support += pickNum(p, ["support", "support_score"]);
-        a.seconds += pickNum(p, ["time_seconds", "playtime", "time", "playtime_seconds"]);
-        lifeAcc.set(pid, a);
-      }
-    });
-  }
-}
-
-function rowFrom(playerId: string, a: LifeAcc): PlayerRow {
+function emptyAcc(): LifeAcc {
   return {
-    playerId,
-    name: a.name,
-    games: a.games,
-    avgKills: a.kills / a.games,
-    avgDeaths: a.deaths / a.games,
-    kd: a.deaths > 0 ? a.kills / a.deaths : a.kills,
-    avgCombat: a.combat / a.games,
-    avgOffense: a.offense / a.games,
-    avgDefense: a.defense / a.games,
-    avgSupport: a.support / a.games,
-    hours: a.seconds / 3600,
+    name: "",
+    kills: 0,
+    deaths: 0,
+    teamkills: 0,
+    seconds: 0,
+    combat: 0,
+    offense: 0,
+    defense: 0,
+    support: 0,
   };
 }
 
-/** Lifetime stats for one player, aggregated across every recorded match. */
+function addRow(target: Map<string, LifeAcc>, pid: string, p: Record<string, unknown>): void {
+  const a = target.get(pid) ?? emptyAcc();
+  a.name = pickStr(p, ["player", "name", "player_name"]) || a.name || pid;
+  a.kills += pickNum(p, ["kills"]);
+  a.deaths += pickNum(p, ["deaths"]);
+  a.teamkills += pickNum(p, ["teamkills"]);
+  a.seconds += pickNum(p, ["time_seconds", "playtime_seconds", "playtime"]);
+  a.combat += pickNum(p, ["combat", "combat_score"]);
+  a.offense += pickNum(p, ["offense", "offense_score"]);
+  a.defense += pickNum(p, ["defense", "defense_score"]);
+  a.support += pickNum(p, ["support", "support_score"]);
+  target.set(pid, a);
+}
+
+/** Earliest recorded match in the archive (epoch seconds). */
+async function archiveStartTs(): Promise<number> {
+  if (archiveStart) return archiveStart;
+  let earliest = Number.POSITIVE_INFINITY;
+  for (let page = 1; page <= 40; page++) {
+    const res = await apiGet(`/api/get_scoreboard_maps?limit=200&page=${page}`);
+    if (res == null) break;
+    const maps = asArray(res, "maps", "scoreboard_maps");
+    if (maps.length === 0) break;
+    for (const m of maps) {
+      const s = pickStr(m, ["start", "creation_time"]);
+      const t = s ? Date.parse(s) : NaN;
+      if (!isNaN(t)) earliest = Math.min(earliest, Math.floor(t / 1000));
+    }
+    if (maps.length < 200) break;
+  }
+  if (!isFinite(earliest)) earliest = Math.floor(Date.now() / 1000) - 30 * 86400;
+  archiveStart = earliest;
+  chunkCount = Math.max(1, Math.ceil((Math.floor(Date.now() / 1000) - earliest) / CHUNK_SECS));
+  return earliest;
+}
+
+/** One date window of aggregated per-player stats. */
+async function fetchWindow(start: number, end: number): Promise<Map<string, LifeAcc>> {
+  const out = new Map<string, LifeAcc>();
+  const res = await apiGet(`/api/get_date_scoreboard?start=${start}&end=${end}`);
+  if (res == null || typeof res !== "object") return out;
+  const rows: Record<string, unknown>[] = Array.isArray(res)
+    ? (res as Record<string, unknown>[])
+    : Object.values(res as Record<string, unknown>).filter(
+        (v): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v),
+      );
+  for (const p of rows) {
+    const pid = pickStr(p, ["player_id", "steam_id_64", "playerId"]);
+    if (!pid) continue;
+    addRow(out, pid, p);
+  }
+  return out;
+}
+
+/** Walk more of the archive, newest-first, within a per-call budget. */
+async function ensureLifetime(budget = 3): Promise<void> {
+  const start0 = await archiveStartTs();
+  const nowSec = Math.floor(Date.now() / 1000);
+  chunkCount = Math.max(1, Math.ceil((nowSec - start0) / CHUNK_SECS));
+  const liveIndex = chunkCount - 1;
+
+  // The newest (still-running) window is refreshed on a short TTL and kept
+  // separate so it never double-counts.
+  if (Date.now() - liveAt > LIVE_TTL_MS) {
+    liveAcc = await fetchWindow(start0 + liveIndex * CHUNK_SECS, nowSec);
+    liveAt = Date.now();
+  }
+
+  const targets: number[] = [];
+  for (let i = liveIndex - 1; i >= 0 && targets.length < budget; i--) {
+    if (!chunkDone.has(i)) targets.push(i);
+  }
+  const wins = await Promise.all(
+    targets.map((i) => {
+      const s = start0 + i * CHUNK_SECS;
+      return fetchWindow(s, Math.min(s + CHUNK_SECS, nowSec));
+    }),
+  );
+  targets.forEach((i, k) => {
+    chunkDone.add(i);
+    for (const [pid, a] of wins[k] ?? []) {
+      const t = lifeAcc.get(pid) ?? emptyAcc();
+      t.name = a.name || t.name;
+      t.kills += a.kills;
+      t.deaths += a.deaths;
+      t.teamkills += a.teamkills;
+      t.seconds += a.seconds;
+      t.combat += a.combat;
+      t.offense += a.offense;
+      t.defense += a.defense;
+      t.support += a.support;
+      lifeAcc.set(pid, t);
+    }
+  });
+}
+
+
+/** Exact lifetime playtime + display name straight from CRCON's player record. */
+async function playerRecord(
+  playerId: string,
+): Promise<{ name: string; seconds: number; sessions: number } | null> {
+  const res = await apiGet(
+    `/api/get_players_history?player_id=${encodeURIComponent(playerId)}&page_size=1`,
+  );
+  const rows = asArray(res, "players");
+  const p = rows[0];
+  if (!p) return null;
+  const names = asArray(p["names"]);
+  return {
+    name: names[0] ? pickStr(names[0], ["name"]) : "",
+    seconds: pickNum(p, ["total_playtime_seconds"]),
+    sessions: pickNum(p, ["sessions_count"]),
+  };
+}
+
+export type LifetimeStats = {
+  playerId: string;
+  name: string;
+  kills: number;
+  deaths: number;
+  teamkills: number;
+  kd: number;
+  hours: number;
+  killsPerHour: number;
+  sessions: number;
+  combat: number;
+  offense: number;
+  defense: number;
+  support: number;
+  coverage: { daysCovered: number; daysTotal: number };
+};
+
+/** Lifetime stats for one player, aggregated across the whole match archive. */
+export async function getLifetimeStats(playerId: string): Promise<LifetimeStats | null> {
+  const [record] = await Promise.all([playerRecord(playerId), ensureLifetime()]);
+  const base = lifeAcc.get(playerId);
+  const live = liveAcc.get(playerId);
+  if (!base && !live && !record) return null;
+
+  const kills = (base?.kills ?? 0) + (live?.kills ?? 0);
+  const deaths = (base?.deaths ?? 0) + (live?.deaths ?? 0);
+  const teamkills = (base?.teamkills ?? 0) + (live?.teamkills ?? 0);
+  const scanSeconds = (base?.seconds ?? 0) + (live?.seconds ?? 0);
+  const seconds = Math.max(record?.seconds ?? 0, scanSeconds);
+  const hours = seconds / 3600;
+  if (kills === 0 && deaths === 0 && seconds === 0) return null;
+
+  return {
+    playerId,
+    name: record?.name || base?.name || live?.name || playerId,
+    kills,
+    deaths,
+    teamkills,
+    kd: deaths > 0 ? kills / deaths : kills,
+    hours,
+    killsPerHour: hours > 0 ? kills / hours : 0,
+    sessions: record?.sessions ?? 0,
+    combat: (base?.combat ?? 0) + (live?.combat ?? 0),
+    offense: (base?.offense ?? 0) + (live?.offense ?? 0),
+    defense: (base?.defense ?? 0) + (live?.defense ?? 0),
+    support: (base?.support ?? 0) + (live?.support ?? 0),
+    coverage: {
+      daysCovered: Math.min((chunkDone.size + 1) * CHUNK_DAYS, chunkCount * CHUNK_DAYS),
+      daysTotal: chunkCount * CHUNK_DAYS,
+    },
+  };
+}
+
+/** Back-compat: recent-form row used by the leaderboard fallback. */
 export async function getPlayerStats(steamId: string): Promise<PlayerRow | null> {
-  await ensureLifetime();
-  const a = lifeAcc.get(steamId);
-  if (a && a.games > 0) return rowFrom(steamId, a);
-  // Not covered yet — fall back to the recent-games aggregation so the panel
-  // shows something while lifetime coverage builds up.
   const { all } = await aggregate(30);
   return all.find((p) => p.playerId === steamId) ?? null;
 }
 
-/** How much of the match archive the lifetime aggregation has walked. */
-export function lifetimeCoverage(): { mapsProcessed: number; mapsTotal: number } {
-  return { mapsProcessed: lifeDone.size, mapsTotal: lifeIds?.length ?? 0 };
-}
 
 
 // --- live server status (CRCON public info) --------------------------------

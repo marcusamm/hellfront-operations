@@ -1,16 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { PlayerRow } from "./stats-types";
+
+export type LifetimeStatsDTO = {
+  playerId: string;
+  name: string;
+  kills: number;
+  deaths: number;
+  teamkills: number;
+  kd: number;
+  hours: number;
+  killsPerHour: number;
+  sessions: number;
+  coverage: { daysCovered: number; daysTotal: number };
+};
 
 export type MyStats =
   | { status: "anon" }
   | { status: "no_steam" }
   | { status: "no_data"; steamId: string }
-  | {
-      status: "ok";
-      steamId: string;
-      player: PlayerRow;
-      coverage: { mapsProcessed: number; mapsTotal: number };
-    };
+  | { status: "ok"; steamId: string; player: LifetimeStatsDTO };
 
 // Resolves the signed-in user's own lifetime CRCON stats. Steam sign-in gives
 // us a verified Steam64 id directly; Discord sign-in falls back to the Steam ID
@@ -27,9 +34,23 @@ export const getMyStats = createServerFn({ method: "GET" }).handler(async (): Pr
   }
   if (!steamId) return { status: "no_steam" };
 
-  const { getPlayerStats, lifetimeCoverage } = await import("./crcon.server");
-  const player = await getPlayerStats(steamId);
-  if (!player) return { status: "no_data", steamId };
-  return { status: "ok", steamId, player, coverage: lifetimeCoverage() };
+  const { getLifetimeStats } = await import("./crcon.server");
+  const s = await getLifetimeStats(steamId);
+  if (!s) return { status: "no_data", steamId };
+  return {
+    status: "ok",
+    steamId,
+    player: {
+      playerId: s.playerId,
+      name: s.name,
+      kills: s.kills,
+      deaths: s.deaths,
+      teamkills: s.teamkills,
+      kd: s.kd,
+      hours: s.hours,
+      killsPerHour: s.killsPerHour,
+      sessions: s.sessions,
+      coverage: s.coverage,
+    },
+  };
 });
-
