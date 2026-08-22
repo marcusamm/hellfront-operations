@@ -380,3 +380,112 @@ export async function getServerStatus(): Promise<ServerStatus | null> {
   const name = asStr(nm.name) ?? asStr(nm.short_name) ?? asStr(r.name) ?? "Objective First";
   return { name, players, maxPlayers, map, online: true };
 }
+
+// --- multi-server status (all servers registered in CRCON) ------------------
+export type ServerBrief = ServerStatus & {
+  serverNumber: number;
+  shortName: string;
+  link: string | null;
+  game: string;
+  isPrimary: boolean;
+};
+
+function parsePublicInfo(result: unknown): Omit<ServerStatus, "online"> | null {
+  if (result == null) return null;
+  const r = asObj(result);
+  const teams = asObj(r.player_count_by_team);
+  const players =
+    asNum(r.player_count) ??
+    asNum(r.current_players) ??
+    (asNum(teams.allied) ?? 0) + (asNum(teams.axis) ?? 0);
+  const maxPlayers = asNum(r.max_player_count) ?? asNum(r.max_players) ?? 100;
+  const cm = asObj(r.current_map);
+  const cmMap = asObj(cm.map);
+  const cmMapMap = asObj(cmMap.map);
+  const map =
+    asStr(cmMap.pretty_name) ??
+    asStr(cmMapMap.pretty_name) ??
+    asStr(cm.pretty_name) ??
+    asStr(cmMap.name) ??
+    asStr(r.current_map) ??
+    "Unknown";
+  const nm = asObj(r.name);
+  const name = asStr(nm.name) ?? asStr(nm.short_name) ?? asStr(r.name) ?? "Objective First";
+  return { name, players, maxPlayers, map };
+}
+
+// CRCON exposes /api/get_public_info without a session, so each sibling
+// server can be read straight from its own CRCON host.
+async function publicInfoFrom(base: string): Promise<unknown | null> {
+  try {
+    const res = await fetch(`${base.replace(/\/+$/, "")}/api/get_public_info`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { result?: unknown };
+    return json?.result ?? null;
+  } catch {
+    return null;
+  }
+}
+
+let serversCache: { at: number; data: ServerBrief[] } | null = null;
+const SERVERS_TTL_MS = 30_000;
+
+export async function getAllServers(): Promise<ServerBrief[]> {
+  if (serversCache && Date.now() - serversCache.at < SERVERS_TTL_MS) return serversCache.data;
+
+  const primary = baseUrl();
+  const listRaw = await apiGet("/api/get_server_list");
+  const entries = Array.isArray(listRaw) ? (listRaw as Record<string, unknown>[]) : [];
+
+  let data: ServerBrief[];
+
+  if (entries.length === 0) {
+    const single = await getServerStatus();
+    data = single
+      ? [
+          {
+            ...single,
+            serverNumber: 1,
+            shortName: single.name,
+            link: primary,
+            game: "hll",
+            isPrimary: true,
+          },
+        ]
+      : [];
+  } else {
+    data = await Promise.all(
+      entries.map(async (e) => {
+        const serverNumber = asNum(e.server_number) ?? 0;
+        const link = asStr(e.link) ?? primary;
+        const isPrimary = e.this_server === true;
+        const shortName = asStr(e.short_name) ?? asStr(e.name) ?? `Server ${serverNumber}`;
+        const fullName = asStr(e.name) ?? shortName;
+        const game = asStr(e.game) ?? "hll";
+
+        let info = link ? await publicInfoFrom(link) : null;
+        if (info == null && isPrimary) info = await apiGet("/api/get_public_info");
+        const parsed = parsePublicInfo(info);
+
+        return {
+          name: fullName,
+          shortName,
+          serverNumber,
+          link: link ?? null,
+          game,
+          isPrimary,
+          players: parsed?.players ?? 0,
+          maxPlayers: parsed?.maxPlayers ?? 100,
+          map: parsed?.map ?? "Unknown",
+          online: parsed != null,
+        } satisfies ServerBrief;
+      }),
+    );
+    data.sort((a, b) => a.serverNumber - b.serverNumber);
+  }
+
+  serversCache = { at: Date.now(), data };
+  return data;
+}
