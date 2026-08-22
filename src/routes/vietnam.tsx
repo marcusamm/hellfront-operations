@@ -47,11 +47,19 @@ const FEATURES = [
   },
 ];
 
-const SERVERS = [
-  { region: "UK", status: "Live", players: "0/100", map: "Rotation" },
-  { region: "US East", status: "Live", players: "0/100", map: "Rotation" },
-  { region: "US West", status: "Live", players: "0/100", map: "Rotation" },
-];
+const vietnamFleetQueryOptions = queryOptions({
+  queryKey: ["crcon", "allServers"],
+  queryFn: () => getAllServerStatus(),
+  staleTime: 60_000,
+  refetchInterval: 60_000,
+});
+
+function regionLabel(s: ServerBrief) {
+  const n = s.shortName || s.name;
+  const m = /(US\s*East|US\s*West|UK|EU)/i.exec(n);
+  return (m?.[1] ?? n).toUpperCase();
+}
+
 
 function VietnamPage() {
   return (
