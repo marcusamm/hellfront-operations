@@ -72,14 +72,22 @@ function LoginPage() {
           </a>
 
           <a
-            href="/auth/steam/login?next=/stats"
+            href="/auth/steam/login?next=/members%23my-stats"
             className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
           >
             <SteamIcon className="h-4 w-4" />
             Sign in with Steam
           </a>
+
+          <a
+            href="/auth/epic/login?next=/members%23my-stats"
+            className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
+          >
+            <EpicIcon className="h-4 w-4" />
+            Sign in with Epic Games
+          </a>
           <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Steam sign-in is for personal stats only · Discord roles unlock member areas
+            Steam / Epic sign-in is for personal stats · Discord roles unlock member areas
           </p>
 
           <div className="mt-12 border hairline bg-card/60 p-6">
