@@ -9,8 +9,8 @@ type NavItem = { to: string; label: string; hash?: string; badge?: "NEW" };
 const NAV: NavItem[] = [
   { to: "/", label: "Command" },
   { to: "/", hash: "servers", label: "Servers" },
-  { to: "/", hash: "operations", label: "Operations" },
-  { to: "/slb", label: "SLB", badge: "NEW" },
+  { to: "/vietnam", label: "Vietnam", badge: "NEW" },
+  { to: "/slb", label: "SLB" },
   { to: "/", hash: "recruitment", label: "Recruitment" },
 ];
 
