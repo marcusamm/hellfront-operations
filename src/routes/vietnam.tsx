@@ -159,34 +159,43 @@ function VietnamPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            {SERVERS.map((s) => (
-              <div key={s.region} className="ink-edge relative overflow-hidden bg-card p-6">
+            {vnServers.map((s) => (
+              <div key={s.serverNumber} className="ink-edge relative overflow-hidden bg-card p-6">
                 <div className="absolute inset-0 halftone opacity-30" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
                     <span className="font-display text-xl uppercase tracking-wide text-foreground">
-                      {s.region}
+                      {regionLabel(s)}
                     </span>
                     <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-napalm">
                       <span className="h-2 w-2 rounded-full bg-napalm" />
-                      {s.status}
+                      {s.online ? "Live" : "Offline"}
                     </span>
                   </div>
                   <div className="mt-4 flex items-end gap-2">
-                    <span className="tnum font-display text-3xl font-bold leading-none text-khaki">
-                      {s.players.split("/")[0]}
+                    <span
+                      className="tnum font-display text-3xl font-bold leading-none text-khaki"
+                      suppressHydrationWarning
+                    >
+                      {s.players}
                     </span>
                     <span className="pb-1 font-mono text-xs text-muted-foreground">
-                      / {s.players.split("/")[1]} slots
+                      / {s.maxPlayers} slots
                     </span>
                   </div>
                   <div className="mt-4 border-t hairline pt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {s.map}
+                    {s.map || "Rotation"}
                   </div>
                 </div>
               </div>
             ))}
+            {vnServers.length === 0 && (
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Fleet status unavailable · retrying
+              </p>
+            )}
           </div>
+
         </div>
       </section>
 
