@@ -359,7 +359,7 @@ function Doctrine() {
       d: "Scrims, campaigns, and a curated SLB roster playing other top clans.",
       wide: true,
     },
-    { n: "06", t: "Our own server", d: "High tickrate EU. Always ours, never rented drama." },
+    { n: "06", t: "Four of our own servers", d: "WWII and Vietnam across EU, UK and both US coasts. Always ours." },
   ];
   return (
     <section className="relative border-b hairline">
