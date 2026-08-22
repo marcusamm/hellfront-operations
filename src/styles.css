@@ -34,6 +34,10 @@
   --color-khaki: var(--khaki);
   --color-gunmetal: var(--gunmetal);
   --color-rust: var(--rust);
+  --color-jungle: var(--jungle);
+  --color-napalm: var(--napalm);
+  --color-clay: var(--clay);
+  --color-canvas: var(--canvas);
 
   --font-display: "Oswald", "Impact", sans-serif;
   --font-stencil: "Black Ops One", "Oswald", sans-serif;
@@ -44,38 +48,42 @@
 :root {
   --radius: 0.125rem;
 
-  /* Military palette */
-  --background: oklch(0.16 0.012 110);          /* near black with olive tint */
-  --foreground: oklch(0.92 0.018 95);           /* warm bone */
-  --card: oklch(0.20 0.014 110);
-  --card-foreground: oklch(0.92 0.018 95);
-  --popover: oklch(0.18 0.014 110);
-  --popover-foreground: oklch(0.92 0.018 95);
+  /* Field palette — 1965 jungle war meets 1944 field olive */
+  --background: oklch(0.148 0.020 132);         /* wet jungle shadow */
+  --foreground: oklch(0.930 0.024 88);          /* sun-bleached canvas */
+  --card: oklch(0.198 0.024 134);               /* canvas tent green */
+  --card-foreground: oklch(0.930 0.024 88);
+  --popover: oklch(0.176 0.022 134);
+  --popover-foreground: oklch(0.930 0.024 88);
 
-  --primary: oklch(0.72 0.10 95);               /* khaki accent */
-  --primary-foreground: oklch(0.16 0.012 110);
-  --secondary: oklch(0.26 0.018 115);
-  --secondary-foreground: oklch(0.92 0.018 95);
-  --muted: oklch(0.22 0.012 110);
-  --muted-foreground: oklch(0.66 0.022 100);
-  --accent: oklch(0.55 0.09 120);               /* olive */
-  --accent-foreground: oklch(0.10 0.01 110);
-  --destructive: oklch(0.50 0.18 28);
-  --destructive-foreground: oklch(0.98 0.005 95);
-  --border: oklch(0.30 0.018 115 / 70%);
-  --input: oklch(0.26 0.014 110);
-  --ring: oklch(0.55 0.09 120);
+  --primary: oklch(0.795 0.095 82);             /* sand tan */
+  --primary-foreground: oklch(0.148 0.020 132);
+  --secondary: oklch(0.268 0.028 136);
+  --secondary-foreground: oklch(0.930 0.024 88);
+  --muted: oklch(0.216 0.020 134);
+  --muted-foreground: oklch(0.672 0.030 96);
+  --accent: oklch(0.545 0.108 133);             /* jungle olive */
+  --accent-foreground: oklch(0.120 0.016 132);
+  --destructive: oklch(0.545 0.185 32);
+  --destructive-foreground: oklch(0.975 0.008 90);
+  --border: oklch(0.315 0.030 136 / 68%);
+  --input: oklch(0.255 0.024 134);
+  --ring: oklch(0.545 0.108 133);
 
-  --olive: oklch(0.45 0.08 120);
-  --olive-deep: oklch(0.30 0.05 120);
-  --khaki: oklch(0.78 0.08 92);
-  --gunmetal: oklch(0.28 0.008 240);
-  --rust: oklch(0.55 0.14 50);
+  --olive: oklch(0.475 0.098 132);
+  --olive-deep: oklch(0.285 0.055 134);
+  --khaki: oklch(0.805 0.090 84);               /* dust tan */
+  --gunmetal: oklch(0.280 0.012 220);
+  --rust: oklch(0.605 0.165 46);                /* napalm orange */
+  --jungle: oklch(0.360 0.090 142);             /* deep foliage */
+  --napalm: oklch(0.680 0.180 58);              /* burn glow */
+  --clay: oklch(0.470 0.115 42);                /* red laterite dirt */
+  --canvas: oklch(0.880 0.038 82);              /* field-manual paper */
 }
 
 .dark {
-  --background: oklch(0.16 0.012 110);
-  --foreground: oklch(0.92 0.018 95);
+  --background: oklch(0.148 0.020 132);
+  --foreground: oklch(0.930 0.024 88);
 }
 
 @layer base {
