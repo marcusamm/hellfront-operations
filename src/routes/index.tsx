@@ -1,13 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import heroImg from "@/assets/hero-battlefield.jpg";
 import frontline1 from "@/assets/frontline-1.png.asset.json";
 import frontline2 from "@/assets/frontline-2.png.asset.json";
 import frontline3 from "@/assets/frontline-3.jpg.asset.json";
 import frontline4 from "@/assets/frontline-4.jpg.asset.json";
 import frontline5 from "@/assets/frontline-5.jpg.asset.json";
-import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import {
@@ -46,8 +44,6 @@ export const Route = createFileRoute("/")({
         content:
           "Organized teamwork, active leadership, and competitive Hell Let Loose operations.",
       },
-      { property: "og:image", content: heroImg },
-      { name: "twitter:image", content: heroImg },
     ],
   }),
   loader: ({ context }) =>
@@ -82,8 +78,8 @@ function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b hairline noise">
       <img
-        src={heroImg}
-        alt="Hell Let Loose battlefield at dusk"
+        src={frontline1.url}
+        alt="Objective First squad holding a frontline position in Hell Let Loose"
         className="absolute inset-0 h-full w-full object-cover opacity-40 saturate-[0.7]"
         width={1920}
         height={1280}
@@ -595,7 +591,7 @@ function Recruitment() {
   return (
     <section id="recruitment" className="relative isolate overflow-hidden border-b hairline">
       <img
-        src={commandImg}
+        src={frontline3.url}
         alt=""
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover opacity-15 saturate-[0.5]"

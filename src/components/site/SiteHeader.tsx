@@ -147,15 +147,14 @@ export function AuthControls({
   const canAdminMap = user.capabilities.includes("admin") || user.capabilities.includes("rcon");
 
   return (
-    <div className={mobile ? "flex items-center gap-2" : "flex items-center gap-2"}>
+    <div className="flex items-center gap-2">
       {canAdminMap && (
         <Link
           to="/admin"
           onClick={onNavigate}
           title="Live Tactical Map"
-          className="inline-flex items-center gap-1.5 border-2 border-khaki bg-khaki/10 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
+          className="inline-flex items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:border-khaki"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-khaki" />
           Map
         </Link>
       )}
@@ -164,25 +163,18 @@ export function AuthControls({
           to="/rcon"
           onClick={onNavigate}
           title="RCON Console"
-          className="inline-flex items-center gap-1.5 border-2 border-rust bg-rust/10 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rust transition-colors hover:bg-rust hover:text-background"
+          className="inline-flex items-center gap-1.5 border border-rust/60 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rust transition-colors hover:bg-rust hover:text-background"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-rust" />
           RCON
         </Link>
       )}
-      <a
-        href="/members#my-stats"
-        onClick={onNavigate}
-        title="My Stats"
-        className="inline-flex items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:border-khaki"
-      >
-        My Stats
-      </a>
       <Link
         to="/members"
+        hash="my-stats"
         onClick={onNavigate}
+        title="Profile & stats"
         className={
-          (mobile ? "flex-1 " : "max-w-[160px] ") +
+          (mobile ? "flex-1 " : "max-w-[170px] ") +
           "flex items-center gap-2 border hairline px-2.5 py-1.5 transition-colors hover:border-khaki"
         }
       >
@@ -195,12 +187,14 @@ export function AuthControls({
         href="/auth/logout"
         onClick={onNavigate}
         title="Sign out"
+        aria-label="Sign out"
         className="inline-flex items-center border hairline px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:border-rust hover:text-rust"
       >
-        Sign Out
+        Out
       </a>
     </div>
   );
+
 
 }
 

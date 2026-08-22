@@ -71,7 +71,7 @@ export function MyStatsPanel() {
       <Notice
         title="Sign in with Steam to see your stats"
         body="One click through Steam — we only read your Steam ID, never your password."
-        action={{ href: "/auth/steam/login?next=/stats", label: "Sign in through Steam" }}
+        action={{ href: "/auth/steam/login?next=/members%23my-stats", label: "Sign in through Steam" }}
       />
     );
   }
@@ -80,7 +80,7 @@ export function MyStatsPanel() {
       <Notice
         title="Link your Steam account"
         body="We couldn't match your account to a Steam ID. Link it through Steam and your stats will appear here instantly."
-        action={{ href: "/auth/steam/login?next=/stats", label: "Link Steam account" }}
+        action={{ href: "/auth/steam/login?next=/members%23my-stats", label: "Link Steam account" }}
       />
     );
   }
