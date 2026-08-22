@@ -219,7 +219,18 @@ export async function applySteamLogin(
 ): Promise<SessionUser> {
   const existing = await getSessionUser();
   const user: SessionUser = existing
-    ? { ...existing, steamId }
+    ? {
+        ...existing,
+        steamId,
+        // Steam-only sessions adopt the live Steam persona name / avatar so we
+        // never show a placeholder like "Steam 6978".
+        username:
+          existing.provider === "steam" && profile.name ? profile.name : existing.username,
+        avatarUrl:
+          existing.provider === "steam" && profile.avatarUrl
+            ? profile.avatarUrl
+            : existing.avatarUrl,
+      }
     : {
         id: `steam:${steamId}`,
         username: profile.name || `Steam ${steamId.slice(-4)}`,
