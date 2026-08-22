@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { ServerStatus } from "./stats-types";
-import type { ServerBrief } from "./crcon.server";
+import type { ServerStatus, ServerBrief } from "./stats-types";
 
 // Live game-server status pulled from CRCON (players, max, current map).
 export const getServerStatus = createServerFn({ method: "GET" }).handler(

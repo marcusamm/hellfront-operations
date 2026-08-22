@@ -382,13 +382,8 @@ export async function getServerStatus(): Promise<ServerStatus | null> {
 }
 
 // --- multi-server status (all servers registered in CRCON) ------------------
-export type ServerBrief = ServerStatus & {
-  serverNumber: number;
-  shortName: string;
-  link: string | null;
-  game: string;
-  isPrimary: boolean;
-};
+import type { ServerBrief } from "./stats-types";
+export type { ServerBrief };
 
 function parsePublicInfo(result: unknown): Omit<ServerStatus, "online"> | null {
   if (result == null) return null;
