@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { DiscordIcon, SteamIcon } from "./SiteHeader";
+import { DiscordIcon } from "./SiteHeader";
 import { getAllServerStatus } from "@/lib/server-status.functions";
 
 export function SiteFooter() {
@@ -80,9 +80,6 @@ export function SiteFooter() {
           <div className="flex items-center gap-3">
             <a href="https://discord.gg/obj1st" aria-label="Discord" className="border hairline p-2 text-muted-foreground transition-colors hover:text-khaki">
               <DiscordIcon className="h-4 w-4" />
-            </a>
-            <a href="https://steamcommunity.com/" aria-label="Steam" className="border hairline p-2 text-muted-foreground transition-colors hover:text-khaki">
-              <SteamIcon className="h-4 w-4" />
             </a>
           </div>
         </div>
