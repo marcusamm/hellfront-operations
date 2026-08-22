@@ -87,22 +87,30 @@ export function MyStatsPanel() {
   if (data.status === "no_data") {
     return (
       <Notice
-        title="No recent games"
-        body="We found your Steam ID, but you don't appear in the last 30 tracked games. Hop on the server and they'll show up here."
+        title="No games on record"
+        body="We found your Steam ID, but you don't appear in our match archive yet. Hop on the server and your lifetime stats will show up here."
       />
     );
   }
 
   const p = data.player;
+  const cov = data.coverage;
+  const partial = cov.mapsTotal > 0 && cov.mapsProcessed < cov.mapsTotal;
   return (
     <div>
       <div className="flex items-center gap-3">
         <span className="h-px w-10 bg-khaki" />
-        <span className="eyebrow">YOUR STATS · LAST 30 GAMES</span>
+        <span className="eyebrow">YOUR STATS · LIFETIME</span>
       </div>
       <h2 className="mt-3 text-2xl text-foreground md:text-3xl">
         {p.name} <span className="text-muted-foreground">· {p.games} games</span>
       </h2>
+      {partial && (
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          Archive scan {cov.mapsProcessed}/{cov.mapsTotal} matches · totals still climbing
+        </p>
+      )}
+
       <div className="mt-5 grid grid-cols-2 gap-px border hairline bg-border/40 sm:grid-cols-3 lg:grid-cols-6">
         <Tile label="Avg Kills" value={n1(p.avgKills)} highlight />
         <Tile label="Avg Deaths" value={n1(p.avgDeaths)} />
