@@ -619,8 +619,8 @@ function FAQ() {
       a: "Not required, but highly recommended. Bootcamps run weekly and they're the fastest path from new player to squad lead.",
     },
     {
-      q: "Which region is your server in?",
-      a: "EU. Our dedicated box runs at high tickrate and is moderated by our own admins.",
+      q: "Which regions are your servers in?",
+      a: "Four servers: our WWII server in the EU, plus Hell Let Loose Vietnam servers in the UK, US East and US West. All moderated by our own admins.",
     },
     {
       q: "What's SLB?",
