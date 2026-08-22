@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import commandImg from "@/assets/gallery-command.jpg";
+import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 
 export const Route = createFileRoute("/slb")({
   head: () => ({
@@ -10,7 +10,6 @@ export const Route = createFileRoute("/slb")({
       { name: "description", content: "Squad Line Battle (SLB) — Objective First's new competitive Hell Let Loose program. Curated rosters, structured scrims, league-style matches." },
       { property: "og:title", content: "SLB · Squad Line Battle — Objective First" },
       { property: "og:description", content: "Our new competitive Hell Let Loose league program. Roster up." },
-      { property: "og:image", content: commandImg },
     ],
   }),
   component: SLB,
@@ -22,7 +21,7 @@ function SLB() {
       <SiteHeader />
 
       <section className="relative isolate overflow-hidden border-b hairline">
-        <img src={commandImg} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-30" />
+        <img src={frontline5.url} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
         <div className="absolute inset-0 grid-tactical opacity-30" />
         <div className="relative mx-auto max-w-7xl px-5 pt-20 pb-24 md:pt-28">
