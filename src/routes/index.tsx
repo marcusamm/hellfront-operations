@@ -508,6 +508,79 @@ function Doctrine() {
   );
 }
 
+/* ----------------------------------------------------------- vietnam teaser */
+
+function VietnamTeaser() {
+  return (
+    <section className="relative isolate overflow-hidden border-b hairline bg-card/20">
+      <img
+        src="/maps/vietnam-hero.jpg"
+        alt="Hell Let Loose Vietnam jungle patrol at dawn"
+        className="absolute inset-0 h-full w-full object-cover opacity-20 saturate-[0.7]"
+        width={1536}
+        height={768}
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
+      <div className="absolute inset-0 topo opacity-50" />
+
+      <div className="relative mx-auto max-w-7xl px-5 py-20 md:py-24">
+        <div className="grid gap-10 md:grid-cols-2 md:items-center">
+          <div>
+            <div className="eyebrow">[VN] New theatre</div>
+            <h2 className="mt-3 text-4xl md:text-5xl">
+              Vietnam is here
+            </h2>
+            <p className="mt-5 max-w-md text-muted-foreground">
+              Same squad-first discipline, new jungle hell. Helicopters, napalm, tunnel networks
+              and mud-soaked firefights across our own dedicated Vietnam servers.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link
+                to="/vietnam"
+                className="inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
+              >
+                Enter theatre →
+              </Link>
+              <Link
+                to="/"
+                hash="servers"
+                className="inline-flex items-center gap-2 border-b-2 border-khaki/40 px-1 py-3.5 font-mono text-xs font-bold uppercase tracking-[0.22em] text-foreground transition-colors hover:border-khaki hover:text-khaki"
+              >
+                View live servers →
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { n: "01", t: "Helicopter assault", d: "Huey insertions and hot LZs" },
+              { n: "02", t: "Jungle maps", d: "Dense foliage and river crossings" },
+              { n: "03", t: "Flame & napalm", d: "Area denial changes the fight" },
+              { n: "04", t: "Same discipline", d: "Squad-first, comms mandatory" },
+            ].map((f) => (
+              <div
+                key={f.n}
+                className="ink-edge relative overflow-hidden bg-card/80 p-5 backdrop-blur-sm"
+              >
+                <div className="absolute inset-0 halftone opacity-30" />
+                <div className="relative">
+                  <div className="flex items-baseline gap-2">
+                    <span className="stencil text-[10px] text-napalm">{f.n}</span>
+                    <h3 className="text-sm text-foreground">{f.t}</h3>
+                  </div>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    {f.d}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------------------------------------ operations */
 
 function Operations() {
