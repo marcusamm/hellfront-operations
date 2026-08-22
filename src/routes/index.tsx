@@ -391,7 +391,7 @@ function RosterColumn({
   rows,
 }: {
   label: string;
-  rows: { name: string; unit: string; role: string; level: number | null }[];
+  rows: { name: string; level: number | null }[];
 }) {
   return (
     <div>
@@ -407,7 +407,7 @@ function RosterColumn({
         <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
           {rows.map((p) => (
             <li
-              key={`${p.name}-${p.unit}-${p.role}`}
+              key={p.name}
               className="flex items-baseline gap-2 font-mono text-[11px]"
             >
               <span className="w-6 shrink-0 tnum text-right text-muted-foreground">
@@ -415,11 +415,6 @@ function RosterColumn({
               </span>
               <span className="truncate text-canvas" title={p.name}>
                 {p.name}
-              </span>
-              <span className="ml-auto shrink-0 uppercase tracking-[0.14em] text-muted-foreground">
-                {p.unit ? p.unit.toUpperCase() : ""}
-                {p.unit && p.role ? " · " : ""}
-                {p.role}
               </span>
             </li>
           ))}
