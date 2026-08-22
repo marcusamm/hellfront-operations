@@ -76,13 +76,20 @@ function MembersPage() {
         </div>
       </section>
 
-      {hasMemberAccess && (
-        <section className="border-b hairline">
-          <div className="mx-auto max-w-7xl px-5 py-12">
-            <MyStatsPanel />
+      <section id="my-stats" className="border-b hairline scroll-mt-24">
+        <div className="mx-auto max-w-7xl px-5 py-12">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="stencil text-xs text-khaki/70">00</span>
+            <h2 className="text-2xl text-foreground md:text-3xl">My Stats</h2>
+            {user.steamId && (
+              <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Steam linked
+              </span>
+            )}
           </div>
-        </section>
-      )}
+          <MyStatsPanel />
+        </div>
+      </section>
 
       <section>
         <div className="mx-auto max-w-7xl px-5 py-16">
