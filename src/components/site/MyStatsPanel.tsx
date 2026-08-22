@@ -94,8 +94,9 @@ export function MyStatsPanel() {
   }
 
   const p = data.player;
-  const cov = data.coverage;
-  const partial = cov.mapsTotal > 0 && cov.mapsProcessed < cov.mapsTotal;
+  const cov = p.coverage;
+  const partial = cov.daysTotal > 0 && cov.daysCovered < cov.daysTotal;
+  const n0 = (x: number) => Math.round(x).toLocaleString("en-US");
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -103,24 +104,23 @@ export function MyStatsPanel() {
         <span className="eyebrow">YOUR STATS · LIFETIME</span>
       </div>
       <h2 className="mt-3 text-2xl text-foreground md:text-3xl">
-        {p.name} <span className="text-muted-foreground">· {p.games} games</span>
+        {p.name} <span className="text-muted-foreground">· {n0(p.sessions)} sessions</span>
       </h2>
       {partial && (
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          Archive scan {cov.mapsProcessed}/{cov.mapsTotal} matches · totals still climbing
+          Archive scan {cov.daysCovered}/{cov.daysTotal} days · totals still climbing
         </p>
       )}
 
       <div className="mt-5 grid grid-cols-2 gap-px border hairline bg-border/40 sm:grid-cols-3 lg:grid-cols-6">
-        <Tile label="Avg Kills" value={n1(p.avgKills)} highlight />
-        <Tile label="Avg Deaths" value={n1(p.avgDeaths)} />
+        <Tile label="Kills" value={n0(p.kills)} highlight />
+        <Tile label="Deaths" value={n0(p.deaths)} />
         <Tile label="K/D" value={n1(p.kd)} />
-        <Tile label="Combat" value={n1(p.avgCombat)} />
-        <Tile label="Offense" value={n1(p.avgOffense)} />
-        <Tile label="Defense" value={n1(p.avgDefense)} />
-        <Tile label="Support" value={n1(p.avgSupport)} />
+        <Tile label="Kills / Hour" value={n1(p.killsPerHour)} />
+        <Tile label="Teamkills" value={n0(p.teamkills)} />
         <Tile label="Hours" value={n1(p.hours)} />
       </div>
     </div>
   );
 }
+
