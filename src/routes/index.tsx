@@ -61,6 +61,7 @@ function Index() {
       <Hero />
       <CommandBento />
       <Doctrine />
+      <VietnamTeaser />
       <Operations />
       <Gallery />
       <Recruitment />

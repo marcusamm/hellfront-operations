@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VietnamRouteImport } from './routes/vietnam'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SlbRouteImport } from './routes/slb'
 import { Route as RconRouteImport } from './routes/rcon'
@@ -22,6 +23,11 @@ import { Route as AuthSteamCallbackRouteImport } from './routes/auth/steam/callb
 import { Route as AuthDiscordLoginRouteImport } from './routes/auth/discord/login'
 import { Route as AuthDiscordCallbackRouteImport } from './routes/auth/discord/callback'
 
+const VietnamRoute = VietnamRouteImport.update({
+  id: '/vietnam',
+  path: '/vietnam',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StatsRoute = StatsRouteImport.update({
   id: '/stats',
   path: '/stats',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
+  '/vietnam': typeof VietnamRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
+  '/vietnam': typeof VietnamRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/rcon': typeof RconRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
+  '/vietnam': typeof VietnamRoute
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/rcon'
     | '/slb'
     | '/stats'
+    | '/vietnam'
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/rcon'
     | '/slb'
     | '/stats'
+    | '/vietnam'
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/rcon'
     | '/slb'
     | '/stats'
+    | '/vietnam'
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   RconRoute: typeof RconRoute
   SlbRoute: typeof SlbRoute
   StatsRoute: typeof StatsRoute
+  VietnamRoute: typeof VietnamRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
   AuthDiscordCallbackRoute: typeof AuthDiscordCallbackRoute
   AuthDiscordLoginRoute: typeof AuthDiscordLoginRoute
@@ -188,6 +201,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vietnam': {
+      id: '/vietnam'
+      path: '/vietnam'
+      fullPath: '/vietnam'
+      preLoaderRoute: typeof VietnamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/stats': {
       id: '/stats'
       path: '/stats'
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   RconRoute: RconRoute,
   SlbRoute: SlbRoute,
   StatsRoute: StatsRoute,
+  VietnamRoute: VietnamRoute,
   AuthLogoutRoute: AuthLogoutRoute,
   AuthDiscordCallbackRoute: AuthDiscordCallbackRoute,
   AuthDiscordLoginRoute: AuthDiscordLoginRoute,
