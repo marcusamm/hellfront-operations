@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import heroImg from "@/assets/hero-battlefield.jpg";
 import frontline1 from "@/assets/frontline-1.png.asset.json";
 import frontline2 from "@/assets/frontline-2.png.asset.json";
@@ -9,7 +10,12 @@ import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { getServerStatus, getAllServerStatus } from "@/lib/server-status.functions";
+import {
+  getServerStatus,
+  getAllServerStatus,
+  getServerRoster,
+} from "@/lib/server-status.functions";
+import type { ServerBrief } from "@/lib/stats-types";
 import { getGuildStats } from "@/lib/discord.functions";
 
 const serverStatusQueryOptions = queryOptions({
@@ -274,59 +280,152 @@ function CommandBento() {
           </Link>
         </div>
 
-        {/* per-server board */}
+        {/* per-server board — tap a card for the live roster */}
         {servers.length > 0 && (
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {servers.map((s) => {
-              const pct = Math.min(
-                100,
-                Math.round((s.players / Math.max(1, s.maxPlayers)) * 100),
-              );
-              return (
-                <article key={s.serverNumber} className="ink-edge relative bg-card p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-napalm">
-                          #{s.serverNumber}
-                        </span>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
-                          {s.game === "hllv" ? "Vietnam" : "WWII"}
-                        </span>
-                      </div>
-                      <h3 className="mt-1 truncate text-base text-foreground">{s.shortName}</h3>
-                    </div>
-                    <span
-                      className={`mt-1 h-2 w-2 shrink-0 rounded-full ${s.online ? "bg-napalm" : "bg-muted-foreground"}`}
-                      title={s.online ? "Online" : "No signal"}
-                    />
-                  </div>
-
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div className="tnum font-display text-3xl font-bold leading-none text-khaki">
-                      {s.players}
-                      <span className="font-mono text-xs font-normal text-muted-foreground">
-                        /{s.maxPlayers}
-                      </span>
-                    </div>
-                    <span className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                      {s.map}
-                    </span>
-                  </div>
-
-                  <div className="mt-3 h-1.5 w-full bg-olive-deep/70">
-                    <div
-                      className="h-full bg-gradient-to-r from-olive to-napalm transition-all duration-700"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </article>
-              );
-            })}
+          <div className="mt-3 grid items-start gap-3 sm:grid-cols-2">
+            {servers.map((s) => (
+              <ServerCard key={s.serverNumber} s={s} />
+            ))}
           </div>
         )}
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------- one server card + roster deck */
+
+function ServerCard({ s }: { s: ServerBrief }) {
+  const [open, setOpen] = useState(false);
+  const pct = Math.min(100, Math.round((s.players / Math.max(1, s.maxPlayers)) * 100));
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["crcon", "roster", s.serverNumber],
+    queryFn: () => getServerRoster({ data: { serverNumber: s.serverNumber } }),
+    enabled: open,
+    staleTime: 20_000,
+    refetchInterval: open ? 20_000 : false,
+  });
+
+  const players = data?.players ?? [];
+  const allies = players.filter((p) => p.team === "allies");
+  const axis = players.filter((p) => p.team === "axis");
+  const other = players.filter((p) => p.team !== "allies" && p.team !== "axis");
+
+  return (
+    <article className="ink-edge relative bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="block w-full p-5 text-left transition-colors hover:bg-secondary/40"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-napalm">#{s.serverNumber}</span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+                {s.game === "hllv" ? "Vietnam" : "WWII"}
+              </span>
+            </div>
+            <h3 className="mt-1 truncate text-base text-foreground">{s.shortName}</h3>
+          </div>
+          <span
+            className={`mt-1 h-2 w-2 shrink-0 rounded-full ${s.online ? "bg-napalm" : "bg-muted-foreground"}`}
+            title={s.online ? "Online" : "No signal"}
+          />
+        </div>
+
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <div className="tnum font-display text-3xl font-bold leading-none text-khaki">
+            {s.players}
+            <span className="font-mono text-xs font-normal text-muted-foreground">
+              /{s.maxPlayers}
+            </span>
+          </div>
+          <span className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            {s.map}
+          </span>
+        </div>
+
+        <div className="mt-3 h-1.5 w-full bg-olive-deep/70">
+          <div
+            className="h-full bg-gradient-to-r from-olive to-napalm transition-all duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          <span className="group-hover:text-napalm">
+            {open ? "Hide roster" : "Who's on"}
+          </span>
+          <span className={`text-napalm transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t hairline px-5 pb-5 pt-4">
+          {isFetching && players.length === 0 ? (
+            <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              Reading roster…
+            </div>
+          ) : players.length === 0 ? (
+            <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {data?.available === false ? "Roster unavailable right now" : "Server is empty"}
+            </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2">
+              <RosterColumn label="Allies" rows={allies} />
+              <RosterColumn label="Axis" rows={axis} />
+              {other.length > 0 && <RosterColumn label="Unassigned" rows={other} />}
+            </div>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+function RosterColumn({
+  label,
+  rows,
+}: {
+  label: string;
+  rows: { name: string; unit: string; role: string; level: number | null }[];
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between border-b hairline pb-1">
+        <span className="eyebrow text-[10px]">{label}</span>
+        <span className="tnum font-mono text-[10px] text-khaki">{rows.length}</span>
+      </div>
+      {rows.length === 0 ? (
+        <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          None
+        </div>
+      ) : (
+        <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto pr-1">
+          {rows.map((p) => (
+            <li
+              key={`${p.name}-${p.unit}-${p.role}`}
+              className="flex items-baseline gap-2 font-mono text-[11px]"
+            >
+              <span className="w-6 shrink-0 tnum text-right text-muted-foreground">
+                {p.level ?? "—"}
+              </span>
+              <span className="truncate text-canvas" title={p.name}>
+                {p.name}
+              </span>
+              <span className="ml-auto shrink-0 uppercase tracking-[0.14em] text-muted-foreground">
+                {p.unit ? p.unit.toUpperCase() : ""}
+                {p.unit && p.role ? " · " : ""}
+                {p.role}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
