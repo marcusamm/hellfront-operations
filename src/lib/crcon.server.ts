@@ -446,14 +446,19 @@ async function ensureLifetime(budget = 3): Promise<void> {
     liveAt = Date.now();
   }
 
-  let spent = 0;
-  for (let i = liveIndex - 1; i >= 0 && spent < budget; i--) {
-    if (chunkDone.has(i)) continue;
-    const s = start0 + i * CHUNK_SECS;
-    const win = await fetchWindow(s, Math.min(s + CHUNK_SECS, nowSec));
+  const targets: number[] = [];
+  for (let i = liveIndex - 1; i >= 0 && targets.length < budget; i--) {
+    if (!chunkDone.has(i)) targets.push(i);
+  }
+  const wins = await Promise.all(
+    targets.map((i) => {
+      const s = start0 + i * CHUNK_SECS;
+      return fetchWindow(s, Math.min(s + CHUNK_SECS, nowSec));
+    }),
+  );
+  targets.forEach((i, k) => {
     chunkDone.add(i);
-    spent++;
-    for (const [pid, a] of win) {
+    for (const [pid, a] of wins[k] ?? []) {
       const t = lifeAcc.get(pid) ?? emptyAcc();
       t.name = a.name || t.name;
       t.kills += a.kills;
@@ -466,8 +471,9 @@ async function ensureLifetime(budget = 3): Promise<void> {
       t.support += a.support;
       lifeAcc.set(pid, t);
     }
-  }
+  });
 }
+
 
 /** Exact lifetime playtime + display name straight from CRCON's player record. */
 async function playerRecord(
