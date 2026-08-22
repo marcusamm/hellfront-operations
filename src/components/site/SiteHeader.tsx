@@ -170,6 +170,14 @@ export function AuthControls({
           RCON
         </Link>
       )}
+      <a
+        href="/members#my-stats"
+        onClick={onNavigate}
+        title="My Stats"
+        className="inline-flex items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:border-khaki"
+      >
+        My Stats
+      </a>
       <Link
         to="/members"
         onClick={onNavigate}
