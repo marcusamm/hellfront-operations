@@ -21,7 +21,7 @@ export const Route = createFileRoute("/login")({
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(currentUserQueryOptions);
     if (user) {
-      throw redirect({ to: "/members" });
+      throw redirect({ to: user.provider === "steam" ? "/stats" : "/members" });
     }
   },
   head: () => ({
