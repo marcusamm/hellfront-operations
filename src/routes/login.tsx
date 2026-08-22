@@ -10,9 +10,11 @@ type LoginSearch = { error?: string };
 const ERROR_MESSAGES: Record<string, string> = {
   state: "Your login session expired or didn't match. Please try again.",
   oauth: "We couldn't complete the Discord sign-in. Please try again.",
-  denied: "Discord authorization was cancelled.",
+  denied: "Sign-in was cancelled.",
   config: "Discord login isn't set up yet — add your credentials in .env (see DISCORD_SETUP.md).",
   steam: "We couldn't verify your Steam sign-in. Please try again.",
+  epic: "We couldn't verify your Epic Games sign-in. Please try again.",
+  epic_config: "Epic sign-in isn't set up yet — EPIC_CLIENT_ID / EPIC_CLIENT_SECRET are missing.",
 };
 
 export const Route = createFileRoute("/login")({
