@@ -102,13 +102,14 @@ export async function fetchSteamProfile(steamId: string): Promise<SteamProfile> 
     const res = await fetch(
       `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${key}&steamids=${steamId}`,
     );
-    if (!res.ok) return { name: null, avatarUrl: null };
+    if (!res.ok) return fetchSteamProfileXml(steamId);
     const json = (await res.json()) as {
       response?: { players?: { personaname?: string; avatarfull?: string }[] };
     };
     const p = json.response?.players?.[0];
-    return { name: p?.personaname ?? null, avatarUrl: p?.avatarfull ?? null };
+    if (!p?.personaname) return fetchSteamProfileXml(steamId);
+    return { name: p.personaname, avatarUrl: p.avatarfull ?? null };
   } catch {
-    return { name: null, avatarUrl: null };
+    return fetchSteamProfileXml(steamId);
   }
 }
