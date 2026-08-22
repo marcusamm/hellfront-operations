@@ -335,10 +335,114 @@ export async function buildLeaderboard(games = 30, topN = 25): Promise<Leaderboa
   };
 }
 
-export async function getPlayerStats(steamId: string, games = 30): Promise<PlayerRow | null> {
-  const { all } = await aggregate(games);
+// --- lifetime (all-time) per-player aggregation ----------------------------
+// CRCON exposes no lifetime aggregate endpoint, so we walk every recorded map
+// scoreboard. That's thousands of requests, so it's done incrementally with a
+// per-call budget and kept in memory; coverage grows as the site is used.
+type LifeAcc = {
+  name: string;
+  games: number;
+  kills: number;
+  deaths: number;
+  combat: number;
+  offense: number;
+  defense: number;
+  support: number;
+  seconds: number;
+};
+
+let lifeIds: number[] | null = null;
+const lifeDone = new Set<number>();
+const lifeAcc = new Map<string, LifeAcc>();
+
+async function loadAllMapIds(): Promise<number[]> {
+  if (lifeIds) return lifeIds;
+  const ids: number[] = [];
+  const pageSize = 200;
+  for (let page = 1; page <= 40; page++) {
+    const res = await apiGet(`/api/get_scoreboard_maps?limit=${pageSize}&page=${page}`);
+    if (res == null) break;
+    const maps = asArray(res, "maps", "scoreboard_maps");
+    if (maps.length === 0) break;
+    ids.push(...maps.map((m) => pickNum(m, ["id", "map_id"])).filter((i) => i > 0));
+    if (maps.length < pageSize) break;
+  }
+  lifeIds = ids;
+  return ids;
+}
+
+async function ensureLifetime(budget = 160): Promise<void> {
+  const ids = await loadAllMapIds();
+  const todo = ids.filter((id) => !lifeDone.has(id)).slice(0, budget);
+  const CONCURRENCY = 8;
+  for (let i = 0; i < todo.length; i += CONCURRENCY) {
+    const batch = todo.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map((id) => getMapPlayers(id)));
+    batch.forEach((id, k) => {
+      lifeDone.add(id);
+      for (const p of results[k] ?? []) {
+        const pid = pickStr(p, ["player_id", "steam_id_64", "playerId", "id"]);
+        if (!pid) continue;
+        const a =
+          lifeAcc.get(pid) ??
+          ({
+            name: "",
+            games: 0,
+            kills: 0,
+            deaths: 0,
+            combat: 0,
+            offense: 0,
+            defense: 0,
+            support: 0,
+            seconds: 0,
+          } satisfies LifeAcc);
+        a.name = pickStr(p, ["player", "name", "player_name"]) || a.name || pid;
+        a.games += 1;
+        a.kills += pickNum(p, ["kills"]);
+        a.deaths += pickNum(p, ["deaths"]);
+        a.combat += pickNum(p, ["combat", "combat_score"]);
+        a.offense += pickNum(p, ["offense", "offense_score"]);
+        a.defense += pickNum(p, ["defense", "defense_score"]);
+        a.support += pickNum(p, ["support", "support_score"]);
+        a.seconds += pickNum(p, ["time_seconds", "playtime", "time", "playtime_seconds"]);
+        lifeAcc.set(pid, a);
+      }
+    });
+  }
+}
+
+function rowFrom(playerId: string, a: LifeAcc): PlayerRow {
+  return {
+    playerId,
+    name: a.name,
+    games: a.games,
+    avgKills: a.kills / a.games,
+    avgDeaths: a.deaths / a.games,
+    kd: a.deaths > 0 ? a.kills / a.deaths : a.kills,
+    avgCombat: a.combat / a.games,
+    avgOffense: a.offense / a.games,
+    avgDefense: a.defense / a.games,
+    avgSupport: a.support / a.games,
+    hours: a.seconds / 3600,
+  };
+}
+
+/** Lifetime stats for one player, aggregated across every recorded match. */
+export async function getPlayerStats(steamId: string): Promise<PlayerRow | null> {
+  await ensureLifetime();
+  const a = lifeAcc.get(steamId);
+  if (a && a.games > 0) return rowFrom(steamId, a);
+  // Not covered yet — fall back to the recent-games aggregation so the panel
+  // shows something while lifetime coverage builds up.
+  const { all } = await aggregate(30);
   return all.find((p) => p.playerId === steamId) ?? null;
 }
+
+/** How much of the match archive the lifetime aggregation has walked. */
+export function lifetimeCoverage(): { mapsProcessed: number; mapsTotal: number } {
+  return { mapsProcessed: lifeDone.size, mapsTotal: lifeIds?.length ?? 0 };
+}
+
 
 // --- live server status (CRCON public info) --------------------------------
 import type { ServerStatus } from "./stats-types";
