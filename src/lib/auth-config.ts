@@ -42,8 +42,12 @@ export type SessionUser = {
   isMember: boolean;
   /** Verified Steam64 id, set when the user signed in with / linked Steam. */
   steamId?: string | null;
+  /** Verified Epic Games account id, set when the user linked Epic. */
+  epicId?: string | null;
+  /** Epic display name, used to match the player in the game archive. */
+  epicName?: string | null;
   /** Which provider created this session. */
-  provider?: "discord" | "steam";
+  provider?: "discord" | "steam" | "epic";
 };
 
 // ---------------------------------------------------------------------------
