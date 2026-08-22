@@ -343,23 +343,29 @@ function BentoStat({ v, l, accent = false }: { v: string; l: string; accent?: bo
 /* -------------------------------------------------------------- doctrine */
 
 function Doctrine() {
+  // Cards are placed to trace a hollow "O" — the Objective First ring.
   const items = [
     {
       n: "01",
       t: "Officers who lead",
       d: "Veterans run every op. Orders are given, acknowledged, and followed. Nobody freelances into a minefield.",
-      wide: true,
+      cell: "sm:col-span-3 sm:row-start-1",
     },
-    { n: "02", t: "Squad doctrine", d: "Roles are assigned, not squabbled over." },
-    { n: "03", t: "Voice-active", d: "A Discord that's loud at 22:00 on a Tuesday." },
-    { n: "04", t: "Bootcamps weekly", d: "New players get trained, not tolerated." },
+    { n: "02", t: "Squad doctrine", d: "Roles are assigned, not squabbled over.", cell: "sm:col-start-1 sm:row-start-2" },
+    { n: "03", t: "Voice-active", d: "A Discord that's loud at 22:00 on a Tuesday.", cell: "sm:col-start-3 sm:row-start-2" },
+    { n: "04", t: "Bootcamps weekly", d: "New players get trained, not tolerated.", cell: "sm:col-start-1 sm:row-start-3" },
     {
       n: "05",
       t: "Competitive program",
       d: "Scrims, campaigns, and a curated SLB roster playing other top clans.",
-      wide: true,
+      cell: "sm:col-start-3 sm:row-start-3",
     },
-    { n: "06", t: "Four of our own servers", d: "WWII and Vietnam across EU, UK and both US coasts. Always ours." },
+    {
+      n: "06",
+      t: "Four of our own servers",
+      d: "WWII and Vietnam across EU, UK and both US coasts. Always ours.",
+      cell: "sm:col-span-3 sm:row-start-4",
+    },
   ];
   return (
     <section className="relative border-b hairline">
@@ -378,13 +384,28 @@ function Doctrine() {
             <div className="mt-6 h-px w-24 bg-napalm/70" />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="relative grid gap-3 sm:grid-cols-3 sm:grid-rows-[auto_1fr_1fr_auto]">
+            {/* hollow centre of the O */}
+            <div
+              aria-hidden
+              className="pointer-events-none hidden sm:col-start-2 sm:row-start-2 sm:row-end-4 sm:block"
+            >
+              <div className="relative h-full w-full">
+                <div className="absolute inset-3 halftone opacity-20" />
+                <div className="absolute inset-0 grid place-items-center">
+                  <span className="stencil text-4xl leading-none text-khaki/15 md:text-5xl">
+                    OBJ
+                    <br />
+                    1ST
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {items.map((i) => (
               <article
                 key={i.n}
-                className={`ink-edge group relative overflow-hidden bg-card p-6 transition-colors hover:bg-secondary/40 ${
-                  i.wide ? "sm:col-span-2" : ""
-                }`}
+                className={`ink-edge group relative overflow-hidden bg-card p-6 transition-colors hover:bg-secondary/40 ${i.cell}`}
               >
                 <div className="flex items-baseline gap-3">
                   <span className="stencil text-xs text-napalm">{i.n}</span>
