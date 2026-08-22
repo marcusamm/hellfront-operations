@@ -3,6 +3,7 @@ import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/Site
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
 import { SteamIcon } from "@/components/site/SteamIcon";
+import { EpicIcon } from "@/components/site/EpicIcon";
 
 type LoginSearch = { error?: string };
 
