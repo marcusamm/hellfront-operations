@@ -491,8 +491,6 @@ export async function getAllServers(): Promise<ServerBrief[]> {
 export type RosterEntry = {
   name: string;
   team: string;
-  unit: string;
-  role: string;
   level: number | null;
 };
 
@@ -560,16 +558,14 @@ async function rosterFrom(base: string): Promise<RosterEntry[] | null> {
     const p = value as Record<string, unknown>;
     const name = asStr(p.name) ?? asStr(p.player) ?? null;
     if (!name) continue;
-    // Deliberately no player IDs / steam IDs — this list is public.
+    // Public roster only shows name, team and level. No squads, roles or IDs.
     rows.push({
       name,
       team: (asStr(p.team) ?? "").toLowerCase(),
-      unit: asStr(p.unit_name) ?? "",
-      role: asStr(p.role) ?? "",
       level: asNum(p.level),
     });
   }
-  rows.sort((a, b) => a.team.localeCompare(b.team) || a.unit.localeCompare(b.unit) || a.name.localeCompare(b.name));
+  rows.sort((a, b) => a.team.localeCompare(b.team) || a.name.localeCompare(b.name));
   return rows;
 }
 
