@@ -1,15 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { DiscordIcon, SteamIcon } from "./SiteHeader";
-import { getServers } from "@/lib/battlemetrics.functions";
-
-const FOOTER_SERVER_IDS = ["38460828"];
-
+import { getAllServerStatus } from "@/lib/server-status.functions";
 
 export function SiteFooter() {
   const { data } = useQuery({
-    queryKey: ["battlemetrics", "servers", FOOTER_SERVER_IDS],
-    queryFn: () => getServers({ data: { ids: FOOTER_SERVER_IDS } }),
+    queryKey: ["crcon", "allServers"],
+    queryFn: () => getAllServerStatus(),
     staleTime: 60_000,
     refetchInterval: 60_000,
   });
@@ -53,20 +50,25 @@ export function SiteFooter() {
             {liveServers.length === 0 ? (
               <div className="font-mono text-xs text-muted-foreground">Loading server data…</div>
             ) : (
-              liveServers.map((s) => {
-                const online = s.status === "online";
-                return (
-                  <div key={s.id} className="flex items-center gap-2 font-mono text-xs">
-                    <span className={`h-2 w-2 rounded-full ${online ? "bg-emerald-500" : "bg-amber-500"}`} />
-                    <span className="truncate text-muted-foreground">{s.country} · {s.map}</span>
-                    <span className="ml-auto text-khaki">{s.players}/{s.maxPlayers}</span>
-                  </div>
-                );
-              })
+              liveServers.map((s) => (
+                <div key={s.serverNumber} className="flex items-center gap-2 font-mono text-xs">
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${s.online ? "bg-napalm" : "bg-muted-foreground"}`}
+                  />
+                  <span className="truncate text-muted-foreground" title={s.name}>
+                    {s.shortName}
+                  </span>
+                  <span className="ml-auto shrink-0 text-khaki">
+                    {s.players}/{s.maxPlayers}
+                  </span>
+                </div>
+              ))
             )}
-            <a href="https://www.battlemetrics.com/servers/hll/38460828" target="_blank" rel="noreferrer" className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground hover:text-khaki">
-              View on BattleMetrics →
-            </a>
+            {data && (
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                Total in-game · <span className="text-khaki">{data.totalPlayers}</span>
+              </div>
+            )}
           </FooterCol>
 
         </div>
