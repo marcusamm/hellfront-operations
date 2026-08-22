@@ -21,3 +21,14 @@ export const getAllServerStatus = createServerFn({ method: "GET" }).handler(
     };
   },
 );
+
+// Public roster for one server: names, teams, squads — no player IDs.
+export const getServerRoster = createServerFn({ method: "GET" })
+  .inputValidator((input: { serverNumber: number }) => ({
+    serverNumber: Number(input.serverNumber),
+  }))
+  .handler(async ({ data }) => {
+    const { getServerRoster: read } = await import("./crcon.server");
+    const roster = await read(data.serverNumber);
+    return { serverNumber: data.serverNumber, players: roster ?? [], available: roster != null };
+  });

@@ -484,3 +484,111 @@ export async function getAllServers(): Promise<ServerBrief[]> {
   serversCache = { at: Date.now(), data };
   return data;
 }
+
+// --- per-server rosters (public "who's on" deck) ----------------------------
+// Each sibling CRCON host needs its own session, so we keep a small cookie
+// jar keyed by host and a short-lived roster cache to stay light on the API.
+export type RosterEntry = {
+  name: string;
+  team: string;
+  unit: string;
+  role: string;
+  level: number | null;
+};
+
+const hostCookies = new Map<string, string>();
+const rosterCache = new Map<number, { at: number; data: RosterEntry[] }>();
+const ROSTER_TTL_MS = 20_000;
+
+async function loginTo(base: string): Promise<string | null> {
+  const cached = hostCookies.get(base);
+  if (cached) return cached;
+  const user = env("CRCON_USER");
+  const pass = env("CRCON_PASSWORD");
+  if (!user || !pass) return null;
+  try {
+    const res = await fetch(`${base}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    if (!res.ok) return null;
+    const headers = res.headers as Headers & { getSetCookie?: () => string[] };
+    const list =
+      typeof headers.getSetCookie === "function"
+        ? headers.getSetCookie()
+        : res.headers.get("set-cookie")
+          ? [res.headers.get("set-cookie") as string]
+          : [];
+    const sess = list.find((c) => c.startsWith("sessionid="));
+    if (!sess) return null;
+    const cookie = sess.split(";")[0] as string;
+    hostCookies.set(base, cookie);
+    return cookie;
+  } catch {
+    return null;
+  }
+}
+
+async function rosterFrom(base: string): Promise<RosterEntry[] | null> {
+  const fetchOnce = async (cookie: string) => {
+    const res = await fetch(`${base}/api/get_detailed_players`, {
+      headers: { Accept: "application/json", Cookie: cookie },
+    });
+    if (res.status === 401) return "unauth" as const;
+    if (!res.ok) return null;
+    const json = (await res.json()) as { result?: unknown };
+    return json?.result ?? null;
+  };
+
+  let cookie = await loginTo(base);
+  if (!cookie) return null;
+  let result = await fetchOnce(cookie);
+  if (result === "unauth") {
+    hostCookies.delete(base);
+    cookie = await loginTo(base);
+    if (!cookie) return null;
+    result = await fetchOnce(cookie);
+  }
+  if (result == null || result === "unauth") return null;
+
+  const r = asObj(result);
+  const playersObj = asObj(r.players ?? result);
+  const rows: RosterEntry[] = [];
+  for (const value of Object.values(playersObj)) {
+    if (!value || typeof value !== "object") continue;
+    const p = value as Record<string, unknown>;
+    const name = asStr(p.name) ?? asStr(p.player) ?? null;
+    if (!name) continue;
+    // Deliberately no player IDs / steam IDs — this list is public.
+    rows.push({
+      name,
+      team: (asStr(p.team) ?? "").toLowerCase(),
+      unit: asStr(p.unit_name) ?? "",
+      role: asStr(p.role) ?? "",
+      level: asNum(p.level),
+    });
+  }
+  rows.sort((a, b) => a.team.localeCompare(b.team) || a.unit.localeCompare(b.unit) || a.name.localeCompare(b.name));
+  return rows;
+}
+
+export async function getServerRoster(serverNumber: number): Promise<RosterEntry[] | null> {
+  const cached = rosterCache.get(serverNumber);
+  if (cached && Date.now() - cached.at < ROSTER_TTL_MS) return cached.data;
+
+  const servers = await getAllServers();
+  const target = servers.find((s) => s.serverNumber === serverNumber);
+  const base = (target?.link ?? (target?.isPrimary ? baseUrl() : null))?.replace(/\/+$/, "");
+  if (!base) return null;
+
+  let data = await rosterFrom(base);
+  // Primary server may only be reachable through the configured CRCON host.
+  if (data == null && target?.isPrimary) {
+    const primary = baseUrl();
+    if (primary && primary !== base) data = await rosterFrom(primary);
+  }
+  if (data == null) return null;
+  rosterCache.set(serverNumber, { at: Date.now(), data });
+  return data;
+}
