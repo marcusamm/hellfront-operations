@@ -2,20 +2,24 @@ import { createServerFn } from "@tanstack/react-start";
 import type { PlayerRow } from "./stats-types";
 
 export type MyStats =
-  | { status: "not_member" }
+  | { status: "anon" }
   | { status: "no_steam" }
   | { status: "no_data"; steamId: string }
   | { status: "ok"; steamId: string; player: PlayerRow };
 
-// Resolves the logged-in member's own CRCON stats:
-//   session -> Discord id -> Steam id (from the Discord channel) -> CRCON stats.
+// Resolves the signed-in user's own CRCON stats. Steam sign-in gives us a
+// verified Steam64 id directly; Discord sign-in falls back to the Steam ID
+// posted in the Discord steam-id channel.
 export const getMyStats = createServerFn({ method: "GET" }).handler(async (): Promise<MyStats> => {
   const { getSessionUser } = await import("./auth.server");
   const user = await getSessionUser();
-  if (!user || !user.isMember) return { status: "not_member" };
+  if (!user) return { status: "anon" };
 
-  const { getSteamIdForDiscordUser } = await import("./steam-link.server");
-  const steamId = await getSteamIdForDiscordUser(user.id);
+  let steamId = user.steamId ?? null;
+  if (!steamId && user.provider !== "steam") {
+    const { getSteamIdForDiscordUser } = await import("./steam-link.server");
+    steamId = await getSteamIdForDiscordUser(user.id);
+  }
   if (!steamId) return { status: "no_steam" };
 
   const { getPlayerStats } = await import("./crcon.server");

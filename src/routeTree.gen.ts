@@ -18,6 +18,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthSteamLoginRouteImport } from './routes/auth/steam/login'
+import { Route as AuthSteamCallbackRouteImport } from './routes/auth/steam/callback'
 import { Route as AuthDiscordLoginRouteImport } from './routes/auth/discord/login'
 import { Route as AuthDiscordCallbackRouteImport } from './routes/auth/discord/callback'
 
@@ -66,6 +67,11 @@ const AuthSteamLoginRoute = AuthSteamLoginRouteImport.update({
   path: '/auth/steam/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSteamCallbackRoute = AuthSteamCallbackRouteImport.update({
+  id: '/auth/steam/callback',
+  path: '/auth/steam/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthDiscordLoginRoute = AuthDiscordLoginRouteImport.update({
   id: '/auth/discord/login',
   path: '/auth/discord/login',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/steam/callback'
     | '/auth/steam/login'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/steam/callback'
     | '/auth/steam/login'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/steam/callback'
     | '/auth/steam/login'
   fileRoutesById: FileRoutesById
 }
@@ -170,6 +182,7 @@ export interface RootRouteChildren {
   AuthLogoutRoute: typeof AuthLogoutRoute
   AuthDiscordCallbackRoute: typeof AuthDiscordCallbackRoute
   AuthDiscordLoginRoute: typeof AuthDiscordLoginRoute
+  AuthSteamCallbackRoute: typeof AuthSteamCallbackRoute
   AuthSteamLoginRoute: typeof AuthSteamLoginRoute
 }
 
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSteamLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/steam/callback': {
+      id: '/auth/steam/callback'
+      path: '/auth/steam/callback'
+      fullPath: '/auth/steam/callback'
+      preLoaderRoute: typeof AuthSteamCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/discord/login': {
       id: '/auth/discord/login'
       path: '/auth/discord/login'
@@ -266,6 +286,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLogoutRoute: AuthLogoutRoute,
   AuthDiscordCallbackRoute: AuthDiscordCallbackRoute,
   AuthDiscordLoginRoute: AuthDiscordLoginRoute,
+  AuthSteamCallbackRoute: AuthSteamCallbackRoute,
   AuthSteamLoginRoute: AuthSteamLoginRoute,
 }
 export const routeTree = rootRouteImport
