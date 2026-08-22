@@ -66,7 +66,13 @@ function regionLabel(s: ServerBrief) {
 
 
 function VietnamPage() {
+  const { data: fleet } = useQuery(vietnamFleetQueryOptions);
+  const vnServers: ServerBrief[] = (fleet?.servers ?? []).filter(
+    (s) => s.game === "hllv",
+  );
+
   return (
+
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
