@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthLogoutRouteImport } from './routes/auth/logout'
 import { Route as AuthSteamLoginRouteImport } from './routes/auth/steam/login'
 import { Route as AuthSteamCallbackRouteImport } from './routes/auth/steam/callback'
+import { Route as AuthEpicLoginRouteImport } from './routes/auth/epic/login'
 import { Route as AuthDiscordLoginRouteImport } from './routes/auth/discord/login'
 import { Route as AuthDiscordCallbackRouteImport } from './routes/auth/discord/callback'
 
@@ -78,6 +79,11 @@ const AuthSteamCallbackRoute = AuthSteamCallbackRouteImport.update({
   path: '/auth/steam/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthEpicLoginRoute = AuthEpicLoginRouteImport.update({
+  id: '/auth/epic/login',
+  path: '/auth/epic/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthDiscordLoginRoute = AuthDiscordLoginRouteImport.update({
   id: '/auth/discord/login',
   path: '/auth/discord/login',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/epic/login': typeof AuthEpicLoginRoute
   '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/epic/login': typeof AuthEpicLoginRoute
   '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/auth/logout': typeof AuthLogoutRoute
   '/auth/discord/callback': typeof AuthDiscordCallbackRoute
   '/auth/discord/login': typeof AuthDiscordLoginRoute
+  '/auth/epic/login': typeof AuthEpicLoginRoute
   '/auth/steam/callback': typeof AuthSteamCallbackRoute
   '/auth/steam/login': typeof AuthSteamLoginRoute
 }
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/epic/login'
     | '/auth/steam/callback'
     | '/auth/steam/login'
   fileRoutesByTo: FileRoutesByTo
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/epic/login'
     | '/auth/steam/callback'
     | '/auth/steam/login'
   id:
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/auth/discord/callback'
     | '/auth/discord/login'
+    | '/auth/epic/login'
     | '/auth/steam/callback'
     | '/auth/steam/login'
   fileRoutesById: FileRoutesById
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   AuthLogoutRoute: typeof AuthLogoutRoute
   AuthDiscordCallbackRoute: typeof AuthDiscordCallbackRoute
   AuthDiscordLoginRoute: typeof AuthDiscordLoginRoute
+  AuthEpicLoginRoute: typeof AuthEpicLoginRoute
   AuthSteamCallbackRoute: typeof AuthSteamCallbackRoute
   AuthSteamLoginRoute: typeof AuthSteamLoginRoute
 }
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSteamCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/epic/login': {
+      id: '/auth/epic/login'
+      path: '/auth/epic/login'
+      fullPath: '/auth/epic/login'
+      preLoaderRoute: typeof AuthEpicLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/discord/login': {
       id: '/auth/discord/login'
       path: '/auth/discord/login'
@@ -307,6 +327,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLogoutRoute: AuthLogoutRoute,
   AuthDiscordCallbackRoute: AuthDiscordCallbackRoute,
   AuthDiscordLoginRoute: AuthDiscordLoginRoute,
+  AuthEpicLoginRoute: AuthEpicLoginRoute,
   AuthSteamCallbackRoute: AuthSteamCallbackRoute,
   AuthSteamLoginRoute: AuthSteamLoginRoute,
 }
