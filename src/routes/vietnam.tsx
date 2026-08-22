@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { getAllServerStatus } from "@/lib/server-status.functions";
+import type { ServerBrief } from "@/lib/stats-types";
+
 
 export const Route = createFileRoute("/vietnam")({
   head: () => ({
@@ -47,14 +51,28 @@ const FEATURES = [
   },
 ];
 
-const SERVERS = [
-  { region: "UK", status: "Live", players: "0/100", map: "Rotation" },
-  { region: "US East", status: "Live", players: "0/100", map: "Rotation" },
-  { region: "US West", status: "Live", players: "0/100", map: "Rotation" },
-];
+const vietnamFleetQueryOptions = queryOptions({
+  queryKey: ["crcon", "allServers"],
+  queryFn: () => getAllServerStatus(),
+  staleTime: 60_000,
+  refetchInterval: 60_000,
+});
+
+function regionLabel(s: ServerBrief) {
+  const n = s.shortName || s.name;
+  const m = /(US\s*East|US\s*West|UK|EU)/i.exec(n);
+  return (m?.[1] ?? n).toUpperCase();
+}
+
 
 function VietnamPage() {
+  const { data: fleet } = useQuery(vietnamFleetQueryOptions);
+  const vnServers: ServerBrief[] = (fleet?.servers ?? []).filter(
+    (s) => s.game === "hllv",
+  );
+
   return (
+
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
@@ -147,34 +165,43 @@ function VietnamPage() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            {SERVERS.map((s) => (
-              <div key={s.region} className="ink-edge relative overflow-hidden bg-card p-6">
+            {vnServers.map((s) => (
+              <div key={s.serverNumber} className="ink-edge relative overflow-hidden bg-card p-6">
                 <div className="absolute inset-0 halftone opacity-30" />
                 <div className="relative">
                   <div className="flex items-center justify-between">
                     <span className="font-display text-xl uppercase tracking-wide text-foreground">
-                      {s.region}
+                      {regionLabel(s)}
                     </span>
                     <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-napalm">
                       <span className="h-2 w-2 rounded-full bg-napalm" />
-                      {s.status}
+                      {s.online ? "Live" : "Offline"}
                     </span>
                   </div>
                   <div className="mt-4 flex items-end gap-2">
-                    <span className="tnum font-display text-3xl font-bold leading-none text-khaki">
-                      {s.players.split("/")[0]}
+                    <span
+                      className="tnum font-display text-3xl font-bold leading-none text-khaki"
+                      suppressHydrationWarning
+                    >
+                      {s.players}
                     </span>
                     <span className="pb-1 font-mono text-xs text-muted-foreground">
-                      / {s.players.split("/")[1]} slots
+                      / {s.maxPlayers} slots
                     </span>
                   </div>
                   <div className="mt-4 border-t hairline pt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    {s.map}
+                    {s.map || "Rotation"}
                   </div>
                 </div>
               </div>
             ))}
+            {vnServers.length === 0 && (
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Fleet status unavailable · retrying
+              </p>
+            )}
           </div>
+
         </div>
       </section>
 
