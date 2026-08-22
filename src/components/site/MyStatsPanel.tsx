@@ -48,19 +48,21 @@ export function MyStatsPanel() {
     );
   }
 
-  if (data.status === "not_member") {
+  if (data.status === "anon") {
     return (
       <Notice
-        title="Whoops — you're not a member yet"
-        body="Head over to our Discord and join up, then come back and sign in to see your stats."
+        title="Sign in with Steam to see your stats"
+        body="One click through Steam — we only read your Steam ID, never your password."
+        action={{ href: "/auth/steam/login?next=/stats", label: "Sign in through Steam" }}
       />
     );
   }
   if (data.status === "no_steam") {
     return (
       <Notice
-        title="Link your Steam ID"
-        body="We couldn't find your Steam ID. Post your 17-digit Steam64 ID in our Discord steam-id channel and your stats will appear here automatically."
+        title="Link your Steam account"
+        body="We couldn't match your account to a Steam ID. Link it through Steam and your stats will appear here instantly."
+        action={{ href: "/auth/steam/login?next=/stats", label: "Link Steam account" }}
       />
     );
   }
