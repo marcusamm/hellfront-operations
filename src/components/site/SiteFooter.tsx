@@ -41,10 +41,10 @@ export function SiteFooter() {
 
           <FooterCol title="Community">
             <FooterLink href="https://discord.gg/obj1st" external>Discord</FooterLink>
-            <FooterLink href="https://steamcommunity.com/" external>Steam Group</FooterLink>
-            <FooterLink to="/">Code of Conduct</FooterLink>
-            <FooterLink to="/">Contact Command</FooterLink>
+            <FooterLink to="/stats">Leaderboard</FooterLink>
+            <FooterLink to="/members" hash="my-stats">My Stats</FooterLink>
           </FooterCol>
+
 
           <FooterCol title="Server Status · Live">
             {liveServers.length === 0 ? (
