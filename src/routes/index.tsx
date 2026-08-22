@@ -9,12 +9,19 @@ import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { getServerStatus } from "@/lib/server-status.functions";
+import { getServerStatus, getAllServerStatus } from "@/lib/server-status.functions";
 import { getGuildStats } from "@/lib/discord.functions";
 
 const serverStatusQueryOptions = queryOptions({
   queryKey: ["crcon", "serverStatus"],
   queryFn: () => getServerStatus(),
+  staleTime: 60_000,
+  refetchInterval: 60_000,
+});
+
+const allServersQueryOptions = queryOptions({
+  queryKey: ["crcon", "allServers"],
+  queryFn: () => getAllServerStatus(),
   staleTime: 60_000,
   refetchInterval: 60_000,
 });
@@ -48,6 +55,7 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(serverStatusQueryOptions),
+      context.queryClient.ensureQueryData(allServersQueryOptions),
       context.queryClient.ensureQueryData(guildStatsQueryOptions),
     ]),
   component: Index,
@@ -160,10 +168,12 @@ function Hero() {
 
 function CommandBento() {
   const { data: guild } = useSuspenseQuery(guildStatsQueryOptions);
-  const { data: server } = useSuspenseQuery(serverStatusQueryOptions);
+  const { data: fleet } = useSuspenseQuery(allServersQueryOptions);
   const fmt = (n: number | null) => (n == null ? "—" : n.toLocaleString("en-US"));
-  const pct = server
-    ? Math.min(100, Math.round((server.players / Math.max(1, server.maxPlayers)) * 100))
+  const servers = fleet.servers;
+  const onlineCount = servers.filter((s) => s.online).length;
+  const totalPct = fleet.totalSlots
+    ? Math.min(100, Math.round((fleet.totalPlayers / fleet.totalSlots) * 100))
     : 0;
 
   return (
@@ -175,26 +185,26 @@ function CommandBento() {
             <h2 className="mt-2 text-3xl md:text-4xl">On the ground right now</h2>
           </div>
           <p className="max-w-xs font-mono text-[11px] leading-relaxed uppercase tracking-[0.14em] text-muted-foreground">
-            Pulled from our game server and Discord. Refreshes every minute.
+            Straight from our own RCON. {servers.length || "—"} servers · refreshed every minute.
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-4 md:grid-rows-2">
-          {/* big live server tile */}
+        <div className="grid gap-3 md:grid-cols-4">
+          {/* total population across the whole fleet */}
           <div className="ink-edge relative overflow-hidden bg-card p-6 md:col-span-2 md:row-span-2">
             <div className="absolute inset-0 topo opacity-60" />
-            <div className="relative">
+            <div className="relative flex h-full flex-col">
               <div className="flex items-center justify-between">
-                <span className="eyebrow text-[10px]">Objective First · EU #1</span>
+                <span className="eyebrow text-[10px]">Fleet population · all servers</span>
                 <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-khaki">
                   <span
-                    className={`h-2 w-2 rounded-full ${server?.online ? "bg-napalm" : "bg-muted-foreground"}`}
+                    className={`h-2 w-2 rounded-full ${onlineCount ? "bg-napalm" : "bg-muted-foreground"}`}
                   />
-                  {server?.online ? "Online" : "No signal"}
+                  {onlineCount}/{servers.length || "—"} online
                 </span>
               </div>
 
-              {!server ? (
+              {servers.length === 0 ? (
                 <div className="mt-10 font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   Server feed temporarily unavailable · retrying
                 </div>
@@ -202,29 +212,32 @@ function CommandBento() {
                 <>
                   <div className="mt-8 flex items-end gap-3">
                     <div className="stencil tnum text-6xl leading-none text-khaki md:text-7xl">
-                      {server.players}
+                      {fleet.totalPlayers}
                     </div>
                     <div className="pb-2 font-mono text-sm text-muted-foreground">
-                      / {server.maxPlayers} players
+                      / {fleet.totalSlots} slots
                     </div>
                   </div>
 
                   <div className="mt-6 h-2 w-full bg-olive-deep/70">
                     <div
                       className="h-full bg-gradient-to-r from-olive to-napalm transition-all duration-700"
-                      style={{ width: `${pct}%` }}
+                      style={{ width: `${totalPct}%` }}
                     />
                   </div>
                   <div className="mt-2 flex justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                    <span>{pct}% populated</span>
-                    <span className="truncate pl-3 text-khaki">{server.map ?? "—"}</span>
+                    <span>{totalPct}% populated</span>
+                    <span className="text-khaki">
+                      {servers.filter((s) => s.game === "hllv").length} Vietnam ·{" "}
+                      {servers.filter((s) => s.game !== "hllv").length} WWII
+                    </span>
                   </div>
                 </>
               )}
 
               <p className="mt-8 max-w-sm text-sm leading-relaxed text-muted-foreground">
-                One dedicated EU box, run for organized play. Seeded most evenings, full on op
-                nights, moderated by people who play on it.
+                Our own boxes across EU, UK and both US coasts — WWII and Vietnam. Seeded most
+                evenings, full on op nights, moderated by people who actually play on them.
               </p>
             </div>
           </div>
@@ -235,10 +248,12 @@ function CommandBento() {
           <div className="ink-edge relative overflow-hidden bg-olive-deep/40 p-5">
             <div className="halftone absolute inset-0 opacity-50" />
             <div className="relative">
-              <div className="stencil text-3xl leading-none text-canvas">4</div>
-              <div className="eyebrow mt-2 text-[10px]">Ops per month</div>
+              <div className="stencil text-3xl leading-none text-canvas">
+                {servers.length || "—"}
+              </div>
+              <div className="eyebrow mt-2 text-[10px]">Dedicated servers</div>
               <p className="mt-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-                Briefed, rostered, and run to a plan.
+                All ours. All moderated by our own admins.
               </p>
             </div>
           </div>
@@ -258,6 +273,58 @@ function CommandBento() {
             </div>
           </Link>
         </div>
+
+        {/* per-server board */}
+        {servers.length > 0 && (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {servers.map((s) => {
+              const pct = Math.min(
+                100,
+                Math.round((s.players / Math.max(1, s.maxPlayers)) * 100),
+              );
+              return (
+                <article key={s.serverNumber} className="ink-edge relative bg-card p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] text-napalm">
+                          #{s.serverNumber}
+                        </span>
+                        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-muted-foreground">
+                          {s.game === "hllv" ? "Vietnam" : "WWII"}
+                        </span>
+                      </div>
+                      <h3 className="mt-1 truncate text-base text-foreground">{s.shortName}</h3>
+                    </div>
+                    <span
+                      className={`mt-1 h-2 w-2 shrink-0 rounded-full ${s.online ? "bg-napalm" : "bg-muted-foreground"}`}
+                      title={s.online ? "Online" : "No signal"}
+                    />
+                  </div>
+
+                  <div className="mt-4 flex items-end justify-between gap-3">
+                    <div className="tnum font-display text-3xl font-bold leading-none text-khaki">
+                      {s.players}
+                      <span className="font-mono text-xs font-normal text-muted-foreground">
+                        /{s.maxPlayers}
+                      </span>
+                    </div>
+                    <span className="truncate font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      {s.map}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 h-1.5 w-full bg-olive-deep/70">
+                    <div
+                      className="h-full bg-gradient-to-r from-olive to-napalm transition-all duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -292,7 +359,7 @@ function Doctrine() {
       d: "Scrims, campaigns, and a curated SLB roster playing other top clans.",
       wide: true,
     },
-    { n: "06", t: "Our own server", d: "High tickrate EU. Always ours, never rented drama." },
+    { n: "06", t: "Four of our own servers", d: "WWII and Vietnam across EU, UK and both US coasts. Always ours." },
   ];
   return (
     <section className="relative border-b hairline">
@@ -552,8 +619,8 @@ function FAQ() {
       a: "Not required, but highly recommended. Bootcamps run weekly and they're the fastest path from new player to squad lead.",
     },
     {
-      q: "Which region is your server in?",
-      a: "EU. Our dedicated box runs at high tickrate and is moderated by our own admins.",
+      q: "Which regions are your servers in?",
+      a: "Four servers: our WWII server in the EU, plus Hell Let Loose Vietnam servers in the UK, US East and US West. All moderated by our own admins.",
     },
     {
       q: "What's SLB?",

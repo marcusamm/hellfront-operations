@@ -28,3 +28,11 @@ export type ServerStatus = {
   map: string;
   online: boolean;
 };
+
+export type ServerBrief = ServerStatus & {
+  serverNumber: number;
+  shortName: string;
+  link: string | null;
+  game: string;
+  isPrimary: boolean;
+};
