@@ -9,12 +9,19 @@ import frontline5 from "@/assets/frontline-5.jpg.asset.json";
 import commandImg from "@/assets/gallery-command.jpg";
 import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { getServerStatus } from "@/lib/server-status.functions";
+import { getServerStatus, getAllServerStatus } from "@/lib/server-status.functions";
 import { getGuildStats } from "@/lib/discord.functions";
 
 const serverStatusQueryOptions = queryOptions({
   queryKey: ["crcon", "serverStatus"],
   queryFn: () => getServerStatus(),
+  staleTime: 60_000,
+  refetchInterval: 60_000,
+});
+
+const allServersQueryOptions = queryOptions({
+  queryKey: ["crcon", "allServers"],
+  queryFn: () => getAllServerStatus(),
   staleTime: 60_000,
   refetchInterval: 60_000,
 });
@@ -48,6 +55,7 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(serverStatusQueryOptions),
+      context.queryClient.ensureQueryData(allServersQueryOptions),
       context.queryClient.ensureQueryData(guildStatsQueryOptions),
     ]),
   component: Index,
