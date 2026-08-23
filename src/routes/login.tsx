@@ -3,15 +3,18 @@ import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/Site
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
 import { SteamIcon } from "@/components/site/SteamIcon";
+import { EpicIcon } from "@/components/site/EpicIcon";
 
 type LoginSearch = { error?: string };
 
 const ERROR_MESSAGES: Record<string, string> = {
   state: "Your login session expired or didn't match. Please try again.",
   oauth: "We couldn't complete the Discord sign-in. Please try again.",
-  denied: "Discord authorization was cancelled.",
+  denied: "Sign-in was cancelled.",
   config: "Discord login isn't set up yet — add your credentials in .env (see DISCORD_SETUP.md).",
   steam: "We couldn't verify your Steam sign-in. Please try again.",
+  epic: "We couldn't verify your Epic Games sign-in. Please try again.",
+  epic_config: "Epic sign-in isn't set up yet — EPIC_CLIENT_ID / EPIC_CLIENT_SECRET are missing.",
 };
 
 export const Route = createFileRoute("/login")({
@@ -72,14 +75,22 @@ function LoginPage() {
           </a>
 
           <a
-            href="/auth/steam/login?next=/stats"
+            href="/auth/steam/login?next=/members%23my-stats"
             className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
           >
             <SteamIcon className="h-4 w-4" />
             Sign in with Steam
           </a>
+
+          <a
+            href="/auth/epic/login?next=/members%23my-stats"
+            className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
+          >
+            <EpicIcon className="h-4 w-4" />
+            Sign in with Epic Games
+          </a>
           <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Steam sign-in is for personal stats only · Discord roles unlock member areas
+            Steam / Epic sign-in is for personal stats · Discord roles unlock member areas
           </p>
 
           <div className="mt-12 border hairline bg-card/60 p-6">

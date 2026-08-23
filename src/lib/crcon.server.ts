@@ -493,6 +493,31 @@ async function playerRecord(
   };
 }
 
+/**
+ * Resolve a CRCON player id from an in-game display name. Epic / Microsoft
+ * Store players don't have a Steam64, and their Epic account id is not the id
+ * the game server reports, so we match on their Epic display name instead
+ * (exact, case-insensitive; falls back to the most-played near match).
+ */
+export async function findPlayerIdByName(name: string): Promise<string | null> {
+  const q = name.trim();
+  if (!q) return null;
+  const res = await apiGet(
+    `/api/get_players_history?player_name=${encodeURIComponent(q)}&page_size=50`,
+  );
+  const rows = asArray(res, "players");
+  let best: { id: string; seconds: number } | null = null;
+  for (const p of rows) {
+    const id = pickStr(p, ["player_id", "steam_id_64", "playerId", "id"]);
+    if (!id) continue;
+    const names = asArray(p["names"]).map((n) => pickStr(n, ["name"]).toLowerCase());
+    const seconds = pickNum(p, ["total_playtime_seconds"]);
+    if (names.includes(q.toLowerCase())) return id;
+    if (!best || seconds > best.seconds) best = { id, seconds };
+  }
+  return best?.id ?? null;
+}
+
 export type LifetimeStats = {
   playerId: string;
   name: string;

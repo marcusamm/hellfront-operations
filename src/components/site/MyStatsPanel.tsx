@@ -1,6 +1,7 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { getMyStats } from "@/lib/me-stats.functions";
 import { SteamIcon } from "@/components/site/SteamIcon";
+import { EpicIcon } from "@/components/site/EpicIcon";
 
 const myStatsQueryOptions = queryOptions({
   queryKey: ["crcon", "myStats"],
@@ -25,14 +26,37 @@ function Tile({ label, value, highlight }: { label: string; value: string; highl
   );
 }
 
+const NEXT = "/members%23my-stats";
+
+function LinkButtons() {
+  return (
+    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+      <a
+        href={`/auth/steam/login?next=${NEXT}`}
+        className="inline-flex items-center justify-center gap-3 border-2 border-khaki bg-khaki px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
+      >
+        <SteamIcon className="h-4 w-4" />
+        Link Steam
+      </a>
+      <a
+        href={`/auth/epic/login?next=${NEXT}`}
+        className="inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
+      >
+        <EpicIcon className="h-4 w-4" />
+        Link Epic Games
+      </a>
+    </div>
+  );
+}
+
 function Notice({
   title,
   body,
-  action,
+  showLinks,
 }: {
   title: string;
   body: string;
-  action?: { href: string; label: string };
+  showLinks?: boolean;
 }) {
   return (
     <div className="border hairline bg-card p-6">
@@ -42,15 +66,7 @@ function Notice({
       </div>
       <h3 className="mt-3 text-xl text-foreground">{title}</h3>
       <p className="mt-2 max-w-lg text-sm text-muted-foreground">{body}</p>
-      {action && (
-        <a
-          href={action.href}
-          className="mt-5 inline-flex items-center gap-3 border-2 border-khaki bg-khaki px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-background transition-all hover:bg-transparent hover:text-khaki"
-        >
-          <SteamIcon className="h-4 w-4" />
-          {action.label}
-        </a>
-      )}
+      {showLinks && <LinkButtons />}
     </div>
   );
 }
@@ -69,18 +85,18 @@ export function MyStatsPanel() {
   if (data.status === "anon") {
     return (
       <Notice
-        title="Sign in with Steam to see your stats"
-        body="One click through Steam — we only read your Steam ID, never your password."
-        action={{ href: "/auth/steam/login?next=/members%23my-stats", label: "Sign in through Steam" }}
+        title="Sign in to see your stats"
+        body="Play on Steam or on Epic / Microsoft Store? Either works — one click, and we only read your account ID, never your password."
+        showLinks
       />
     );
   }
   if (data.status === "no_steam") {
     return (
       <Notice
-        title="Link your Steam account"
-        body="We couldn't match your account to a Steam ID. Link it through Steam and your stats will appear here instantly."
-        action={{ href: "/auth/steam/login?next=/members%23my-stats", label: "Link Steam account" }}
+        title="Link your game account"
+        body="We couldn't match you to a player in our archive yet. Link the account you actually play on — Steam or Epic Games — and your stats will appear here."
+        showLinks
       />
     );
   }
@@ -88,7 +104,8 @@ export function MyStatsPanel() {
     return (
       <Notice
         title="No games on record"
-        body="We found your Steam ID, but you don't appear in our match archive yet. Hop on the server and your lifetime stats will show up here."
+        body="We found your account, but you don't appear in our match archive yet. Hop on the server and your lifetime stats will show up here. Playing on Epic? Link Epic too so we can match your in-game name."
+        showLinks
       />
     );
   }

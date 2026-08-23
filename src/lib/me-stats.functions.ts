@@ -19,38 +19,51 @@ export type MyStats =
   | { status: "no_data"; steamId: string }
   | { status: "ok"; steamId: string; player: LifetimeStatsDTO };
 
-// Resolves the signed-in user's own lifetime CRCON stats. Steam sign-in gives
-// us a verified Steam64 id directly; Discord sign-in falls back to the Steam ID
-// posted in the Discord steam-id channel.
+// Resolves the signed-in user's own lifetime CRCON stats. Works for Steam,
+// Epic / Microsoft Store, and Discord sign-ins: Steam gives a verified Steam64,
+// Epic gives a verified Epic account (matched to the game archive by id, then
+// by display name), and Discord falls back to the posted steam-id channel.
 export const getMyStats = createServerFn({ method: "GET" }).handler(async (): Promise<MyStats> => {
   const { getSessionUser } = await import("./auth.server");
   const user = await getSessionUser();
   if (!user) return { status: "anon" };
 
-  let steamId = user.steamId ?? null;
-  if (!steamId && user.provider !== "steam") {
-    const { getSteamIdForDiscordUser } = await import("./steam-link.server");
-    steamId = await getSteamIdForDiscordUser(user.id);
-  }
-  if (!steamId) return { status: "no_steam" };
+  const { getLifetimeStats, findPlayerIdByName } = await import("./crcon.server");
 
-  const { getLifetimeStats } = await import("./crcon.server");
-  const s = await getLifetimeStats(steamId);
-  if (!s) return { status: "no_data", steamId };
-  return {
-    status: "ok",
-    steamId,
-    player: {
-      playerId: s.playerId,
-      name: s.name,
-      kills: s.kills,
-      deaths: s.deaths,
-      teamkills: s.teamkills,
-      kd: s.kd,
-      hours: s.hours,
-      killsPerHour: s.killsPerHour,
-      sessions: s.sessions,
-      coverage: s.coverage,
-    },
-  };
+  const candidates: string[] = [];
+  if (user.steamId) candidates.push(user.steamId);
+  if (!user.steamId && user.provider === "discord") {
+    const { getSteamIdForDiscordUser } = await import("./steam-link.server");
+    const linked = await getSteamIdForDiscordUser(user.id);
+    if (linked) candidates.push(linked);
+  }
+  if (user.epicId) candidates.push(user.epicId);
+  if (user.epicName) {
+    const byName = await findPlayerIdByName(user.epicName);
+    if (byName) candidates.push(byName);
+  }
+
+  if (candidates.length === 0) return { status: "no_steam" };
+
+  for (const playerId of candidates) {
+    const s = await getLifetimeStats(playerId);
+    if (!s) continue;
+    return {
+      status: "ok",
+      steamId: playerId,
+      player: {
+        playerId: s.playerId,
+        name: s.name,
+        kills: s.kills,
+        deaths: s.deaths,
+        teamkills: s.teamkills,
+        kd: s.kd,
+        hours: s.hours,
+        killsPerHour: s.killsPerHour,
+        sessions: s.sessions,
+        coverage: s.coverage,
+      },
+    };
+  }
+  return { status: "no_data", steamId: candidates[0]! };
 });

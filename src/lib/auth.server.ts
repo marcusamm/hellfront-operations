@@ -245,3 +245,38 @@ export async function applySteamLogin(
   await setSessionUser(user);
   return user;
 }
+
+/**
+ * Attach a verified Epic Games account id to the current session. Epic (and
+ * Microsoft Store) players have no Steam64 at all, so this is how they claim
+ * their own stats. Layers on top of an existing Discord/Steam session, or
+ * creates a stats-only Epic session.
+ */
+export async function applyEpicLogin(
+  epicId: string,
+  displayName: string | null,
+): Promise<SessionUser> {
+  const existing = await getSessionUser();
+  const user: SessionUser = existing
+    ? {
+        ...existing,
+        epicId,
+        epicName: displayName ?? existing.epicName ?? null,
+        username:
+          existing.provider === "epic" && displayName ? displayName : existing.username,
+      }
+    : {
+        id: `epic:${epicId}`,
+        username: displayName || `Epic ${epicId.slice(-4)}`,
+        avatarUrl: null,
+        roleIds: [],
+        roleNames: [],
+        capabilities: ["stats"],
+        isMember: false,
+        epicId,
+        epicName: displayName ?? null,
+        provider: "epic",
+      };
+  await setSessionUser(user);
+  return user;
+}
