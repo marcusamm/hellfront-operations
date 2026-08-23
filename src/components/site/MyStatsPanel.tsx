@@ -1,6 +1,7 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { getMyStats } from "@/lib/me-stats.functions";
 import { SteamIcon } from "@/components/site/SteamIcon";
+import { EpicIcon } from "@/components/site/EpicIcon";
 
 const myStatsQueryOptions = queryOptions({
   queryKey: ["crcon", "myStats"],
