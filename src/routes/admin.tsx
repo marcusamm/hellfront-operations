@@ -4,6 +4,14 @@ import { SiteHeader, MobileStickyCTA } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
 import { LiveTacticalMap } from "@/components/site/LiveTacticalMap";
+import {
+  MessageBars,
+  PlayersPanel,
+  GameStatePanel,
+  MapRotationPanel,
+  RawCommandPanel,
+} from "@/components/site/RconPanels";
+
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ context }) => {
