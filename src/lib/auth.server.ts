@@ -213,20 +213,26 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     console.error("[discord-link] account lookup failed:", err);
   }
 
+  // Keep anything the user already linked in this browser (Steam / Epic
+  // sign-in before connecting Discord).
+  const existing = await getSessionUser();
+
   return {
     id: identity.id,
+    discordId: identity.id,
     username: displayName,
     avatarUrl,
     roleIds,
     roleNames,
     capabilities: capabilitiesFromRoleNames(roleNames),
     isMember: member !== null,
-    steamId,
-    epicId,
-    epicName,
+    steamId: steamId ?? existing?.steamId ?? null,
+    epicId: epicId ?? existing?.epicId ?? null,
+    epicName: epicName ?? existing?.epicName ?? null,
     provider: "discord",
   };
 }
+
 
 
 // --- Steam sign-in / linking ------------------------------------------------

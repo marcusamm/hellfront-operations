@@ -76,7 +76,42 @@ function MembersPage() {
         </div>
       </section>
 
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-7xl px-5 py-10">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="stencil text-xs text-khaki/70">00</span>
+            <h2 className="text-2xl text-foreground md:text-3xl">Linked accounts</h2>
+          </div>
+          <div className="grid gap-px border hairline bg-border/40 sm:grid-cols-3">
+            <AccountCard
+              label="Discord"
+              linked={!!user.discordId}
+              value={
+                user.discordId
+                  ? `${user.username}${user.isMember ? " · in server" : " · not in server"}`
+                  : null
+              }
+              detail={user.discordId ? user.roleNames.join(", ") || "No roles" : null}
+              href="/auth/discord/login"
+            />
+            <AccountCard
+              label="Steam"
+              linked={!!user.steamId}
+              value={user.steamId ?? null}
+              href="/auth/steam/login"
+            />
+            <AccountCard
+              label="Epic Games"
+              linked={!!user.epicId}
+              value={user.epicName ?? user.epicId ?? null}
+              href="/auth/epic/login"
+            />
+          </div>
+        </div>
+      </section>
+
       <section id="my-stats" className="border-b hairline scroll-mt-24">
+
         <div className="mx-auto max-w-7xl px-5 py-12">
           <div className="mb-6 flex items-center gap-3">
             <span className="stencil text-xs text-khaki/70">00</span>
@@ -200,6 +235,51 @@ function MemberCard({
           {cta} · soon
         </div>
       )}
+    </div>
+  );
+}
+
+function AccountCard({
+  label,
+  linked,
+  value,
+  detail,
+  href,
+}: {
+  label: string;
+  linked: boolean;
+  value: string | null;
+  detail?: string | null;
+  href: string;
+}) {
+  return (
+    <div className="bg-card p-6">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-foreground">
+          {label}
+        </span>
+        <span
+          className={`font-mono text-[10px] uppercase tracking-[0.2em] ${
+            linked ? "text-khaki" : "text-muted-foreground"
+          }`}
+        >
+          {linked ? "Linked" : "Not linked"}
+        </span>
+      </div>
+      <p className="mt-3 break-all text-sm text-muted-foreground">
+        {value ?? "Connect this account to pull your details and stats."}
+      </p>
+      {detail ? (
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-khaki/70">
+          {detail}
+        </p>
+      ) : null}
+      <a
+        href={href}
+        className="mt-5 inline-flex items-center border border-khaki/60 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:bg-khaki hover:text-background"
+      >
+        {linked ? "Reconnect" : `Connect ${label}`}
+      </a>
     </div>
   );
 }

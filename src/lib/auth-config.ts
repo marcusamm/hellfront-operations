@@ -40,7 +40,9 @@ export type SessionUser = {
   capabilities: Capability[];
   /** Whether the user is actually a member of your Discord server. */
   isMember: boolean;
-  /** Verified Steam64 id, set when the user signed in with / linked Steam. */
+  /** Discord user id, set when the user signed in with / linked Discord. */
+  discordId?: string | null;
+
   steamId?: string | null;
   /** Verified Epic Games account id, set when the user linked Epic. */
   epicId?: string | null;
