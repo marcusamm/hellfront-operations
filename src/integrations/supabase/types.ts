@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      account_links: {
+        Row: {
+          created_at: string
+          discord_id: string
+          discord_username: string | null
+          epic_id: string | null
+          epic_name: string | null
+          steam_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discord_id: string
+          discord_username?: string | null
+          epic_id?: string | null
+          epic_name?: string | null
+          steam_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discord_id?: string
+          discord_username?: string | null
+          epic_id?: string | null
+          epic_name?: string | null
+          steam_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
