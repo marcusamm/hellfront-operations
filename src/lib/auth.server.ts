@@ -341,9 +341,10 @@ export async function applySteamLogin(
         steamId,
         provider: "steam",
       };
-  const hydrated = await hydrateDiscordFromGameIds(user);
-  await setSessionUser(hydrated);
-  return hydrated;
+  // Do not block the OAuth callback on a potentially large CRCON history scan.
+  // Discord enrichment is performed lazily after the Steam session is saved.
+  await setSessionUser(user);
+  return user;
 }
 
 /**
