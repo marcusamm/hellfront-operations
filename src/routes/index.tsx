@@ -77,13 +77,15 @@ function Index() {
 
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden border-b hairline noise">
+    <section className="relative isolate overflow-hidden border-b hairline">
       <img
         src={frontline1.url}
         alt="Objective First squad holding a frontline position in Hell Let Loose"
         className="absolute inset-0 h-full w-full object-cover opacity-40 saturate-[0.7]"
         width={1920}
         height={1280}
+        fetchPriority="high"
+        decoding="async"
       />
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background/70 to-background/30" />
       <div className="absolute inset-0 jungle-wash" />
@@ -129,7 +131,7 @@ function Hero() {
           </div>
         </div>
 
-        <aside className="off-axis ink-edge scanline relative bg-card/80 p-6 backdrop-blur-sm tape">
+        <aside className="off-axis ink-edge relative bg-card/90 p-6 tape">
           <div className="halftone absolute inset-0 opacity-40" />
           <div className="relative">
             <div className="eyebrow text-[10px]">Field card / 01</div>
@@ -519,6 +521,8 @@ function VietnamTeaser() {
         className="absolute inset-0 h-full w-full object-cover opacity-20 saturate-[0.7]"
         width={1536}
         height={768}
+        loading="lazy"
+        decoding="async"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/70" />
       <div className="absolute inset-0 topo opacity-50" />
@@ -560,7 +564,7 @@ function VietnamTeaser() {
             ].map((f) => (
               <div
                 key={f.n}
-                className="ink-edge relative overflow-hidden bg-card/80 p-5 backdrop-blur-sm"
+                className="ink-edge relative overflow-hidden bg-card/90 p-5"
               >
                 <div className="absolute inset-0 halftone opacity-30" />
                 <div className="relative">
@@ -669,6 +673,8 @@ function Recruitment() {
         alt=""
         aria-hidden
         className="absolute inset-0 h-full w-full object-cover opacity-15 saturate-[0.5]"
+        loading="lazy"
+        decoding="async"
       />
       <div className="absolute inset-0 bg-background/85" />
       <div className="absolute inset-0 jungle-wash" />
@@ -691,7 +697,7 @@ function Recruitment() {
             </a>
           </div>
 
-          <div className="ink-edge off-axis-r relative bg-card/85 p-8 backdrop-blur">
+          <div className="ink-edge off-axis-r relative bg-card/95 p-8">
             <div className="absolute inset-0 halftone opacity-30" />
             <div className="relative">
               <div className="flex items-center justify-between border-b hairline pb-3">

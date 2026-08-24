@@ -17,7 +17,7 @@ const NAV: NavItem[] = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-50 border-b hairline bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b hairline bg-background/95">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3.5">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center border-2 border-khaki bg-olive-deep">
@@ -231,7 +231,7 @@ export function ServerStatusPill() {
 
 export function MobileStickyCTA() {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t hairline bg-background/95 backdrop-blur md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t hairline bg-background/95 md:hidden">
       <a
         href="https://discord.gg/obj1st"
         className="flex items-center justify-center gap-2 bg-khaki py-3.5 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background"
