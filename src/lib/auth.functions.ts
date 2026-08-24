@@ -16,7 +16,12 @@ export const getCurrentUser = createServerFn({ method: "GET" }).handler(
     // Members register their Steam / Epic id on our Discord, so a Steam- or
     // Epic-only session can be matched back to its Discord account and roles.
     if (!user.discordId && (user.steamId || user.epicId)) {
-      const hydrated = await hydrateDiscordFromGameIds(user);
+      const hydrated = await Promise.race([
+        hydrateDiscordFromGameIds(user),
+        new Promise<SessionUser>((resolve) => {
+          setTimeout(() => resolve(user), 1_500);
+        }),
+      ]);
       if (hydrated.discordId) {
         await setSessionUser(hydrated);
         return hydrated;
