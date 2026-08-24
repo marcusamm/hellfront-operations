@@ -71,10 +71,31 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 }
 
+/**
+ * Browsers silently drop a Set-Cookie larger than ~4 KB, which makes a fresh
+ * Discord link look like it "worked" and then vanish on the next request (the
+ * old, smaller cookie is still the one being sent). So keep the session
+ * payload small: role ids are only needed while building the session, and long
+ * role lists / avatar urls get trimmed to fit.
+ */
+function slimSessionUser(user: SessionUser): SessionUser {
+  return {
+    ...user,
+    roleIds: [],
+    roleNames: user.roleNames.slice(0, 12),
+  };
+}
+
 export async function setSessionUser(user: SessionUser): Promise<void> {
   const session = await openSession<SessionData>(getSessionConfig());
-  await session.update({ user });
+  let slim = slimSessionUser(user);
+  // Hard safety net: shed role names until the payload is comfortably small.
+  while (JSON.stringify(slim).length > 1800 && slim.roleNames.length > 0) {
+    slim = { ...slim, roleNames: slim.roleNames.slice(0, slim.roleNames.length - 1) };
+  }
+  await session.update({ user: slim });
 }
+
 
 export async function clearSessionUser(): Promise<void> {
   const session = await openSession<SessionData>(getSessionConfig());
