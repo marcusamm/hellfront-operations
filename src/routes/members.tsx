@@ -76,7 +76,42 @@ function MembersPage() {
         </div>
       </section>
 
+      <section className="border-b hairline">
+        <div className="mx-auto max-w-7xl px-5 py-10">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="stencil text-xs text-khaki/70">00</span>
+            <h2 className="text-2xl text-foreground md:text-3xl">Linked accounts</h2>
+          </div>
+          <div className="grid gap-px border hairline bg-border/40 sm:grid-cols-3">
+            <AccountCard
+              label="Discord"
+              linked={!!user.discordId}
+              value={
+                user.discordId
+                  ? `${user.username}${user.isMember ? " · in server" : " · not in server"}`
+                  : null
+              }
+              detail={user.discordId ? user.roleNames.join(", ") || "No roles" : null}
+              href="/auth/discord/login"
+            />
+            <AccountCard
+              label="Steam"
+              linked={!!user.steamId}
+              value={user.steamId ?? null}
+              href="/auth/steam/login"
+            />
+            <AccountCard
+              label="Epic Games"
+              linked={!!user.epicId}
+              value={user.epicName ?? user.epicId ?? null}
+              href="/auth/epic/login"
+            />
+          </div>
+        </div>
+      </section>
+
       <section id="my-stats" className="border-b hairline scroll-mt-24">
+
         <div className="mx-auto max-w-7xl px-5 py-12">
           <div className="mb-6 flex items-center gap-3">
             <span className="stencil text-xs text-khaki/70">00</span>
