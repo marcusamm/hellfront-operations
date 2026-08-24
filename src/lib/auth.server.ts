@@ -131,6 +131,23 @@ export async function setSessionUser(user: SessionUser): Promise<void> {
         isMember: slim.isMember,
       }),
     });
+
+    // Permanently record the pairing so the link survives cookie loss, a
+    // sign-out, or CRCON being unreachable.
+    if (slim.steamId || slim.epicId) {
+      try {
+        const { saveLink } = await import("./link-store.server");
+        await saveLink({
+          discordId: slim.discordId,
+          discordUsername: slim.username,
+          steamId: slim.steamId ?? null,
+          epicId: slim.epicId ?? null,
+          epicName: slim.epicName ?? null,
+        });
+      } catch (err) {
+        console.error("[link-store] persist from session failed:", err);
+      }
+    }
   }
 }
 
