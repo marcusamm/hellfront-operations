@@ -293,26 +293,44 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     ? `${CDN}/avatars/${identity.id}/${identity.avatar}.png?size=128`
     : null;
 
-  // CRCON stores the Steam / Epic id members register when they join the
-  // Discord, so link the game account automatically at sign-in.
+  // Our own permanent link table wins: once a member has linked Discord +
+  // Steam/Epic it stays linked forever, even if CRCON is down or the record
+  // there changes.
   let steamId: string | null = null;
   let epicId: string | null = null;
   let epicName: string | null = null;
   try {
-    const { getLinkedAccount } = await import("./discord-link.server");
-    const linked = await getLinkedAccount(identity.id);
-    if (linked) {
-      steamId = linked.steamId;
-      epicId = linked.eosId;
-      epicName = linked.name;
+    const { getLinkByDiscordId } = await import("./link-store.server");
+    const stored = await getLinkByDiscordId(identity.id);
+    if (stored) {
+      steamId = stored.steamId;
+      epicId = stored.epicId;
+      epicName = stored.epicName;
     }
   } catch (err) {
-    console.error("[discord-link] account lookup failed:", err);
+    console.error("[link-store] discord lookup failed:", err);
+  }
+
+  // CRCON stores the Steam / Epic id members register when they join the
+  // Discord, so link the game account automatically at first sign-in.
+  if (!steamId && !epicId) {
+    try {
+      const { getLinkedAccount } = await import("./discord-link.server");
+      const linked = await getLinkedAccount(identity.id);
+      if (linked) {
+        steamId = linked.steamId;
+        epicId = linked.eosId;
+        epicName = linked.name;
+      }
+    } catch (err) {
+      console.error("[discord-link] account lookup failed:", err);
+    }
   }
 
   // Keep anything the user already linked in this browser (Steam / Epic
   // sign-in before connecting Discord).
   const existing = await getSessionUser();
+
 
   return {
     id: identity.id,
