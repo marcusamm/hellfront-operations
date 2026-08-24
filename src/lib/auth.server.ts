@@ -83,7 +83,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       ...user,
       discordId: linkedDiscord.discordId,
       username: linkedDiscord.username,
-      avatar: linkedDiscord.avatar,
+      avatarUrl: linkedDiscord.avatarUrl,
       roleNames: linkedDiscord.roleNames,
       capabilities: linkedDiscord.capabilities,
       isMember: linkedDiscord.isMember,
@@ -121,9 +121,10 @@ export async function setSessionUser(user: SessionUser): Promise<void> {
     const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
     await discordSession.update({
       user: slimSessionUser({
+        id: slim.discordId,
         discordId: slim.discordId,
         username: slim.username,
-        avatar: slim.avatar,
+        avatarUrl: slim.avatarUrl,
         roleIds: [],
         roleNames: slim.roleNames,
         capabilities: slim.capabilities,
