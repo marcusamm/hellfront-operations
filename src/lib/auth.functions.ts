@@ -8,7 +8,21 @@ import type { SessionUser } from "./auth-config";
  */
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
   async (): Promise<SessionUser | null> => {
-    const { getSessionUser } = await import("./auth.server");
-    return getSessionUser();
+    const { getSessionUser, hydrateDiscordFromGameIds, setSessionUser } = await import(
+      "./auth.server"
+    );
+    const user = await getSessionUser();
+    if (!user) return null;
+    // Members register their Steam / Epic id on our Discord, so a Steam- or
+    // Epic-only session can be matched back to its Discord account and roles.
+    if (!user.discordId && (user.steamId || user.epicId)) {
+      const hydrated = await hydrateDiscordFromGameIds(user);
+      if (hydrated.discordId) {
+        await setSessionUser(hydrated);
+        return hydrated;
+      }
+    }
+    return user;
   },
 );
+
