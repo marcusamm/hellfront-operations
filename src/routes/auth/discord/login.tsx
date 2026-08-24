@@ -10,7 +10,8 @@ export const Route = createFileRoute("/auth/discord/login")({
     handlers: {
       GET: async () => {
         try {
-          const { buildAuthorizeUrl } = await import("@/lib/auth.server");
+          const { buildAuthorizeUrl, captureDiscordLinkIntent } =
+            await import("@/lib/auth.server");
           const { setCookie, getRequestProtocol } = await import("@tanstack/react-start/server");
 
           let secure = true;
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/auth/discord/login")({
           }
 
           const state = crypto.randomUUID();
+          await captureDiscordLinkIntent();
           setCookie("discord_oauth_state", state, {
             httpOnly: true,
             sameSite: "lax",

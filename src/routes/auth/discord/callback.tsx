@@ -37,10 +37,16 @@ export const Route = createFileRoute("/auth/discord/callback")({
         }
 
         try {
-          const { exchangeCodeForToken, buildSessionUser, setSessionUser } =
+          const {
+            exchangeCodeForToken,
+            buildSessionUser,
+            applyDiscordLinkIntent,
+            setSessionUser,
+          } =
             await import("@/lib/auth.server");
           const accessToken = await exchangeCodeForToken(code);
-          const user = await buildSessionUser(accessToken);
+          const discordUser = await buildSessionUser(accessToken);
+          const user = await applyDiscordLinkIntent(discordUser);
           await setSessionUser(user);
 
           // Logged in. Members go to the members area; non-members (not in the

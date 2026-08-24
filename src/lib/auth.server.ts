@@ -37,6 +37,7 @@ export function discordClientId(): string {
 
 // --- session ---------------------------------------------------------------
 export type SessionData = { user?: SessionUser };
+type DiscordLinkIntentData = { steamId?: string; epicId?: string; epicName?: string };
 
 export function getSessionConfig() {
   const password = requireEnv("DISCORD_SESSION_SECRET");
@@ -62,35 +63,53 @@ export function getSessionConfig() {
   };
 }
 
-function getDiscordLinkSessionConfig() {
+function getDiscordLinkIntentSessionConfig() {
   return {
     ...getSessionConfig(),
-    name: "objfirst_discord",
+    name: "objfirst_discord_link_intent",
+    maxAge: 60 * 10,
   };
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const session = await openSession<SessionData>(getSessionConfig());
-    const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
-    const user = session.data.user ?? null;
-    const linkedDiscord = discordSession.data.user ?? null;
-
-    if (!linkedDiscord?.discordId) return user;
-    if (!user) return linkedDiscord;
-
-    return {
-      ...user,
-      discordId: linkedDiscord.discordId,
-      username: linkedDiscord.username,
-      avatarUrl: linkedDiscord.avatarUrl,
-      roleNames: linkedDiscord.roleNames,
-      capabilities: linkedDiscord.capabilities,
-      isMember: linkedDiscord.isMember,
-    };
+    return session.data.user ?? null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Preserve the verified game account while Discord temporarily owns the
+ * browser navigation. This tiny encrypted cookie is consumed by the callback,
+ * so account linking does not depend on a larger identity cookie surviving an
+ * external OAuth round-trip.
+ */
+export async function captureDiscordLinkIntent(): Promise<void> {
+  const user = await getSessionUser();
+  const intent = await openSession<DiscordLinkIntentData>(getDiscordLinkIntentSessionConfig());
+  if (!user?.steamId && !user?.epicId) {
+    await intent.clear();
+    return;
+  }
+  await intent.update({
+    steamId: user.steamId ?? undefined,
+    epicId: user.epicId ?? undefined,
+    epicName: user.epicName ?? undefined,
+  });
+}
+
+export async function applyDiscordLinkIntent(user: SessionUser): Promise<SessionUser> {
+  const intent = await openSession<DiscordLinkIntentData>(getDiscordLinkIntentSessionConfig());
+  const merged: SessionUser = {
+    ...user,
+    steamId: user.steamId ?? intent.data.steamId ?? null,
+    epicId: user.epicId ?? intent.data.epicId ?? null,
+    epicName: user.epicName ?? intent.data.epicName ?? null,
+  };
+  await intent.clear();
+  return merged;
 }
 
 /**
@@ -115,48 +134,33 @@ export async function setSessionUser(user: SessionUser): Promise<void> {
   while (JSON.stringify(slim).length > 1800 && slim.roleNames.length > 0) {
     slim = { ...slim, roleNames: slim.roleNames.slice(0, slim.roleNames.length - 1) };
   }
-  await session.update({ user: slim });
-
-  if (slim.discordId) {
-    const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
-    await discordSession.update({
-      user: slimSessionUser({
-        id: slim.discordId,
-        discordId: slim.discordId,
-        username: slim.username,
-        avatarUrl: slim.avatarUrl,
-        roleIds: [],
-        roleNames: slim.roleNames,
-        capabilities: slim.capabilities,
-        isMember: slim.isMember,
-      }),
+  // A Discord + game pairing is not considered successful until it is safely
+  // stored. This prevents the UI saying "linked" after a failed database write.
+  if (slim.discordId && (slim.steamId || slim.epicId)) {
+    const { saveLink } = await import("./link-store.server");
+    await saveLink({
+      discordId: slim.discordId,
+      discordUsername: slim.username,
+      steamId: slim.steamId ?? null,
+      epicId: slim.epicId ?? null,
+      epicName: slim.epicName ?? null,
     });
-
-    // Permanently record the pairing so the link survives cookie loss, a
-    // sign-out, or CRCON being unreachable.
-    if (slim.steamId || slim.epicId) {
-      try {
-        const { saveLink } = await import("./link-store.server");
-        await saveLink({
-          discordId: slim.discordId,
-          discordUsername: slim.username,
-          steamId: slim.steamId ?? null,
-          epicId: slim.epicId ?? null,
-          epicName: slim.epicName ?? null,
-        });
-      } catch (err) {
-        console.error("[link-store] persist from session failed:", err);
-      }
-    }
   }
+
+  await session.update({ user: slim });
 }
 
 
 export async function clearSessionUser(): Promise<void> {
   const session = await openSession<SessionData>(getSessionConfig());
-  const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
+  const legacyDiscordSession = await openSession<SessionData>({
+    ...getSessionConfig(),
+    name: "objfirst_discord",
+  });
+  const intent = await openSession<DiscordLinkIntentData>(getDiscordLinkIntentSessionConfig());
   await session.clear();
-  await discordSession.clear();
+  await legacyDiscordSession.clear();
+  await intent.clear();
 }
 
 // --- OAuth + redirect URI --------------------------------------------------
@@ -311,8 +315,20 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     console.error("[link-store] discord lookup failed:", err);
   }
 
+  // Members also register Steam64 directly in the Discord link channel. Use
+  // that authoritative registration before the slower CRCON archive lookup,
+  // then persist it when the completed session is saved below.
+  if (!steamId && !epicId) {
+    try {
+      const { getSteamIdForDiscordUser } = await import("./steam-link.server");
+      steamId = await getSteamIdForDiscordUser(identity.id);
+    } catch (err) {
+      console.error("[steam-link] account lookup failed:", err);
+    }
+  }
+
   // CRCON stores the Steam / Epic id members register when they join the
-  // Discord, so link the game account automatically at first sign-in.
+  // Discord, so use it as the remaining automatic-link source.
   if (!steamId && !epicId) {
     try {
       const { getLinkedAccount } = await import("./discord-link.server");
