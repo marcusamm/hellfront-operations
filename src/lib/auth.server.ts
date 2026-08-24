@@ -142,7 +142,11 @@ export async function fetchIdentity(accessToken: string): Promise<DiscordIdentit
 }
 
 // --- Guild member + roles (bot token) --------------------------------------
-type GuildMember = { roles: string[]; nick: string | null } | null;
+type GuildMember = {
+  roles: string[];
+  nick: string | null;
+  user?: { username?: string; global_name?: string | null; avatar?: string | null; id?: string };
+} | null;
 
 export async function fetchGuildMember(userId: string): Promise<GuildMember> {
   const guildId = requireEnv("DISCORD_GUILD_ID");
@@ -152,9 +156,14 @@ export async function fetchGuildMember(userId: string): Promise<GuildMember> {
   });
   if (res.status === 404) return null; // user is not in the server
   if (!res.ok) throw new Error(`Failed to fetch guild member (${res.status})`);
-  const json = (await res.json()) as { roles?: string[]; nick?: string | null };
-  return { roles: json.roles ?? [], nick: json.nick ?? null };
+  const json = (await res.json()) as {
+    roles?: string[];
+    nick?: string | null;
+    user?: GuildMember extends null ? never : NonNullable<GuildMember>["user"];
+  };
+  return { roles: json.roles ?? [], nick: json.nick ?? null, user: json.user };
 }
+
 
 // Cache the guild's role-id -> role-name map for a few minutes.
 let rolesCache: { at: number; map: Map<string, string> } | null = null;
