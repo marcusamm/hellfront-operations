@@ -38,7 +38,7 @@ export const Route = createFileRoute("/auth/discord/callback")({
 
           // Logged in. Members go to the members area; non-members (not in the
           // Discord server) land on the home page with a notice.
-          return redirectTo(user.isMember ? "/members" : "/?login=notmember");
+          return redirectTo(user.isMember ? "/members#accounts" : "/members#accounts");
         } catch (err) {
           console.error("Discord OAuth callback failed:", err);
           return redirectTo("/login?error=oauth");
