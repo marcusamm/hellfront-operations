@@ -85,8 +85,28 @@ function absorb(players: HistoryPlayer[]): void {
     const existing = index.get(discordId);
     // Newest record wins, so a returning player's current account is used.
     if (!existing || lastSeenMs >= existing.lastSeenMs) index.set(discordId, entry);
+    for (const key of [playerId, steamId, eosId]) {
+      if (key) reverse.set(key.toLowerCase(), discordId);
+    }
   }
 }
+
+/** Reverse lookup: which Discord account registered this Steam64 / EOS id. */
+export async function getDiscordIdForPlayer(gameId: string): Promise<string | null> {
+  const key = gameId.trim().toLowerCase();
+  if (!key) return null;
+  const first = fullScanAt === 0;
+  const job = ensureIndex();
+  if (first) {
+    await job;
+  } else {
+    const hit = reverse.get(key);
+    if (hit) return hit;
+    await job;
+  }
+  return reverse.get(key) ?? null;
+}
+
 
 async function fetchPage(page: number): Promise<HistoryPlayer[]> {
   const res = (await apiGetRaw(
