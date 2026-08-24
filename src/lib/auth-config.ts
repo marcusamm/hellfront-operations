@@ -60,19 +60,47 @@ export type SessionUser = {
 // A user gets the UNION of capabilities from every matching role.
 // ---------------------------------------------------------------------------
 export const ROLE_CAPABILITIES: { role: string; grants: Capability[] }[] = [
+  // Staff / leadership
+  { role: "Obj 1st Admin", grants: ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] },
+  { role: "Server Owner", grants: ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] },
   { role: "Admin", grants: ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] },
+  { role: "OBJ 1ST HEAD MOD", grants: ["admin", "manageOps", "members", "rsvp", "stats", "rcon"] },
+  { role: "OBJ 1st MOD", grants: ["manageOps", "members", "rsvp", "stats", "rcon"] },
   { role: "Mod", grants: ["manageOps", "members", "rsvp", "stats", "rcon"] },
+  { role: "cadre", grants: ["manageOps", "members", "rsvp", "stats"] },
+  { role: "Team Manager", grants: ["manageOps", "members", "rsvp", "stats"] },
+  { role: "Onboarding Team", grants: ["manageOps", "members", "rsvp", "stats"] },
+  { role: "Tech Advisor", grants: ["members", "rsvp", "stats"] },
+  { role: "Community Rep", grants: ["members", "rsvp", "stats"] },
+  { role: "Obj1 Partner Streamer", grants: ["members", "rsvp", "stats"] },
+
+  // Supporter tiers
+  { role: "Platinum Member", grants: ["members", "rsvp", "stats"] },
   { role: "Plat member", grants: ["members", "rsvp", "stats"] },
-  { role: "Gold member", grants: ["members", "rsvp", "stats"] },
+  { role: "Gold Member", grants: ["members", "rsvp", "stats"] },
   { role: "Bronze member", grants: ["members", "rsvp", "stats"] },
-  { role: "member", grants: ["members", "rsvp", "stats"] },
-  { role: "squad mate", grants: ["members", "rsvp", "stats"] },
+  { role: "Patreon", grants: ["members", "rsvp", "stats"] },
+  { role: "Ko-fi Bot", grants: [] },
+  { role: "Donator", grants: ["members", "rsvp", "stats"] },
+  { role: "Server Booster", grants: ["members", "rsvp", "stats"] },
+  { role: "Early Supporter", grants: ["members", "rsvp", "stats"] },
+
+  // General membership
+  { role: "Member", grants: ["members", "rsvp", "stats"] },
+  { role: "Squad mate", grants: ["members", "rsvp", "stats"] },
+  { role: "Vietnam Squad Mate", grants: ["members", "rsvp", "stats"] },
+  { role: "League", grants: ["members", "rsvp", "stats"] },
 ];
+
+/** Roles that must NEVER grant access, even if a token heuristic matches. */
+const DENY_ROLES = ["warned", "ban appeal", "muted", "banned"];
 
 
 /** Compute capabilities from a list of Discord role names. */
 export function capabilitiesFromRoleNames(roleNames: string[]): Capability[] {
-  const lower = roleNames.map((n) => n.toLowerCase());
+  const lower = roleNames
+    .map((n) => n.toLowerCase())
+    .filter((n) => !DENY_ROLES.includes(n));
   const have = new Set(lower);
   const caps = new Set<Capability>();
   for (const { role, grants } of ROLE_CAPABILITIES) {
