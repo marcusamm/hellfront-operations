@@ -83,11 +83,21 @@ export async function clearSessionUser(): Promise<void> {
 
 // --- OAuth + redirect URI --------------------------------------------------
 export function getRedirectUri(): string {
+  // The session cookie is set on whatever host the callback lands on, so the
+  // callback MUST come back to the host the user is browsing (preview vs
+  // published). Otherwise Discord "succeeds" but the browsing session never
+  // sees the link. The env override is only used when the origin is unknown.
+  try {
+    const origin = getRequestUrl().origin;
+    if (origin) return `${origin}/auth/discord/callback`;
+  } catch {
+    /* fall through to the override */
+  }
   const override = env("DISCORD_REDIRECT_URI");
   if (override) return override;
-  const origin = getRequestUrl().origin;
-  return `${origin}/auth/discord/callback`;
+  throw new Error("Unable to determine the Discord redirect URI.");
 }
+
 
 export function buildAuthorizeUrl(state: string): string {
   const params = new URLSearchParams({
