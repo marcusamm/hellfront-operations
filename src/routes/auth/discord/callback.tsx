@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 function redirectTo(path: string): Response {
-  return new Response(null, { status: 302, headers: { Location: path } });
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: path,
+      "Cache-Control": "private, no-store",
+      Pragma: "no-cache",
+    },
+  });
 }
 
 // GET /auth/discord/callback?code=...&state=...
