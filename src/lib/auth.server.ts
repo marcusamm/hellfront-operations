@@ -242,6 +242,66 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
   };
 }
 
+/**
+ * Reverse account linking: members register their Steam64 / Epic id on our
+ * Discord, and CRCON stores that `discord_id` on the player record. So when
+ * someone signs in with Steam or Epic we can look the Discord account up from
+ * the game id and pull their server roles automatically — no manual linking.
+ */
+export async function hydrateDiscordFromGameIds(user: SessionUser): Promise<SessionUser> {
+  if (user.discordId) return user; // already linked
+  const gameIds = [user.steamId, user.epicId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (gameIds.length === 0) return user;
+
+  try {
+    const { getDiscordIdForPlayer, getLinkedAccount } = await import("./discord-link.server");
+    let discordId: string | null = null;
+    for (const id of gameIds) {
+      discordId = await getDiscordIdForPlayer(id);
+      if (discordId) break;
+    }
+    if (!discordId) return user;
+
+    const member = await fetchGuildMember(discordId).catch(() => null);
+    const roleIds = member?.roles ?? [];
+    const roleNames: string[] = [];
+    if (member) {
+      const roleMap = await fetchGuildRoleMap();
+      for (const id of roleIds) {
+        const name = roleMap.get(id);
+        if (name) roleNames.push(name);
+      }
+    }
+
+    // Fill in any game id the member registered but hasn't signed in with.
+    const linked = await getLinkedAccount(discordId).catch(() => null);
+
+    const discordName =
+      member?.nick || member?.user?.global_name || member?.user?.username || null;
+    const avatar = member?.user?.avatar;
+    const discordAvatar =
+      avatar && member?.user?.id ? `${CDN}/avatars/${member.user.id}/${avatar}.png?size=128` : null;
+
+    return {
+      ...user,
+      discordId,
+      username: discordName || user.username,
+      avatarUrl: user.avatarUrl ?? discordAvatar,
+      roleIds,
+      roleNames,
+      capabilities: capabilitiesFromRoleNames(roleNames),
+      isMember: member !== null,
+      steamId: user.steamId ?? linked?.steamId ?? null,
+      epicId: user.epicId ?? linked?.eosId ?? null,
+      epicName: user.epicName ?? linked?.name ?? null,
+    };
+  } catch (err) {
+    console.error("[discord-link] reverse lookup failed:", err);
+    return user;
+  }
+}
 
 
 // --- Steam sign-in / linking ------------------------------------------------
