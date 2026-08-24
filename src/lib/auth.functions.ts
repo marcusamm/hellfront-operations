@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { setResponseHeader } from "@tanstack/react-start/server";
 import type { SessionUser } from "./auth-config";
 
 /**
@@ -8,6 +9,7 @@ import type { SessionUser } from "./auth-config";
  */
 export const getCurrentUser = createServerFn({ method: "GET" }).handler(
   async (): Promise<SessionUser | null> => {
+    setResponseHeader("Cache-Control", "private, no-store");
     const { getSessionUser, hydrateDiscordFromGameIds, setSessionUser } = await import(
       "./auth.server"
     );

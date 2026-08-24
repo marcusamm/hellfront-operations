@@ -62,10 +62,32 @@ export function getSessionConfig() {
   };
 }
 
+function getDiscordLinkSessionConfig() {
+  return {
+    ...getSessionConfig(),
+    name: "objfirst_discord",
+  };
+}
+
 export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const session = await openSession<SessionData>(getSessionConfig());
-    return session.data.user ?? null;
+    const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
+    const user = session.data.user ?? null;
+    const linkedDiscord = discordSession.data.user ?? null;
+
+    if (!linkedDiscord?.discordId) return user;
+    if (!user) return linkedDiscord;
+
+    return {
+      ...user,
+      discordId: linkedDiscord.discordId,
+      username: linkedDiscord.username,
+      avatarUrl: linkedDiscord.avatarUrl,
+      roleNames: linkedDiscord.roleNames,
+      capabilities: linkedDiscord.capabilities,
+      isMember: linkedDiscord.isMember,
+    };
   } catch {
     return null;
   }
@@ -94,12 +116,30 @@ export async function setSessionUser(user: SessionUser): Promise<void> {
     slim = { ...slim, roleNames: slim.roleNames.slice(0, slim.roleNames.length - 1) };
   }
   await session.update({ user: slim });
+
+  if (slim.discordId) {
+    const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
+    await discordSession.update({
+      user: slimSessionUser({
+        id: slim.discordId,
+        discordId: slim.discordId,
+        username: slim.username,
+        avatarUrl: slim.avatarUrl,
+        roleIds: [],
+        roleNames: slim.roleNames,
+        capabilities: slim.capabilities,
+        isMember: slim.isMember,
+      }),
+    });
+  }
 }
 
 
 export async function clearSessionUser(): Promise<void> {
   const session = await openSession<SessionData>(getSessionConfig());
+  const discordSession = await openSession<SessionData>(getDiscordLinkSessionConfig());
   await session.clear();
+  await discordSession.clear();
 }
 
 // --- OAuth + redirect URI --------------------------------------------------
