@@ -315,8 +315,20 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     console.error("[link-store] discord lookup failed:", err);
   }
 
+  // Members also register Steam64 directly in the Discord link channel. Use
+  // that authoritative registration before the slower CRCON archive lookup,
+  // then persist it when the completed session is saved below.
+  if (!steamId && !epicId) {
+    try {
+      const { getSteamIdForDiscordUser } = await import("./steam-link.server");
+      steamId = await getSteamIdForDiscordUser(identity.id);
+    } catch (err) {
+      console.error("[steam-link] account lookup failed:", err);
+    }
+  }
+
   // CRCON stores the Steam / Epic id members register when they join the
-  // Discord, so link the game account automatically at first sign-in.
+  // Discord, so use it as the remaining automatic-link source.
   if (!steamId && !epicId) {
     try {
       const { getLinkedAccount } = await import("./discord-link.server");
