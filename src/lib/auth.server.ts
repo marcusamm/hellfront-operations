@@ -196,6 +196,23 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     ? `${CDN}/avatars/${identity.id}/${identity.avatar}.png?size=128`
     : null;
 
+  // CRCON stores the Steam / Epic id members register when they join the
+  // Discord, so link the game account automatically at sign-in.
+  let steamId: string | null = null;
+  let epicId: string | null = null;
+  let epicName: string | null = null;
+  try {
+    const { getLinkedAccount } = await import("./discord-link.server");
+    const linked = await getLinkedAccount(identity.id);
+    if (linked) {
+      steamId = linked.steamId;
+      epicId = linked.eosId;
+      epicName = linked.name;
+    }
+  } catch (err) {
+    console.error("[discord-link] account lookup failed:", err);
+  }
+
   return {
     id: identity.id,
     username: displayName,
@@ -204,8 +221,13 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
     roleNames,
     capabilities: capabilitiesFromRoleNames(roleNames),
     isMember: member !== null,
+    steamId,
+    epicId,
+    epicName,
+    provider: "discord",
   };
 }
+
 
 // --- Steam sign-in / linking ------------------------------------------------
 /**
