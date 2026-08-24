@@ -146,56 +146,81 @@ export function AuthControls({
   const canRcon = user.capabilities.includes("rcon");
   const canAdminMap = user.capabilities.includes("admin") || user.capabilities.includes("rcon");
 
+  const itemClass =
+    "flex items-center justify-between gap-3 px-3 py-2.5 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-olive-deep hover:text-khaki";
+
+  if (mobile) {
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 border hairline px-2.5 py-2">
+          {avatar}
+          <span className="truncate font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
+            {user.username}
+          </span>
+        </div>
+        <div className="flex flex-col border hairline">
+          <Link to="/members" hash="my-stats" onClick={onNavigate} className={itemClass}>
+            My Stats
+          </Link>
+          {canAdminMap && (
+            <Link to="/admin" onClick={onNavigate} className={itemClass}>
+              Admin Panel <span className="text-[9px] text-khaki">MAP + RCON</span>
+            </Link>
+          )}
+          {canRcon && (
+            <Link to="/rcon" onClick={onNavigate} className={itemClass}>
+              RCON Console <span className="text-[9px] text-rust">STAFF</span>
+            </Link>
+          )}
+          <a href="/auth/logout" onClick={onNavigate} className={itemClass + " text-muted-foreground hover:text-rust"}>
+            Sign Out
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-2">
-      {canAdminMap && (
-        <Link
-          to="/admin"
-          onClick={onNavigate}
-          title="Admin panel — tactical map & RCON"
-          className="inline-flex items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:border-khaki"
-        >
-          Admin
-        </Link>
-      )}
-      {canRcon && (
-        <Link
-          to="/rcon"
-          onClick={onNavigate}
-          title="RCON Console"
-          className="inline-flex items-center gap-1.5 border border-rust/60 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rust transition-colors hover:bg-rust hover:text-background"
-        >
-          RCON
-        </Link>
-      )}
-      <Link
-        to="/members"
-        hash="my-stats"
-        onClick={onNavigate}
-        title="Profile & stats"
-        className={
-          (mobile ? "flex-1 " : "max-w-[170px] ") +
-          "flex items-center gap-2 border hairline px-2.5 py-1.5 transition-colors hover:border-khaki"
-        }
+    <div className="relative group">
+      <button
+        type="button"
+        className="flex max-w-[190px] items-center gap-2 border hairline px-2.5 py-1.5 transition-colors group-hover:border-khaki"
       >
         {avatar}
         <span className="truncate font-mono text-[11px] uppercase tracking-[0.16em] text-foreground">
           {user.username}
         </span>
-      </Link>
-      <a
-        href="/auth/logout"
-        onClick={onNavigate}
-        title="Sign out"
-        aria-label="Sign out"
-        className="inline-flex items-center border hairline px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:border-rust hover:text-rust"
-      >
-        Out
-      </a>
+        <span className="font-mono text-[9px] text-muted-foreground">▾</span>
+      </button>
+
+      <div className="invisible absolute right-0 top-full z-50 w-60 translate-y-1 pt-2 opacity-0 transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+        <div className="flex flex-col border hairline bg-background shadow-xl">
+          <div className="border-b hairline px-3 py-2 font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground">
+            {canAdminMap ? "Staff Access" : "Member"}
+          </div>
+          <Link to="/members" hash="my-stats" className={itemClass}>
+            My Stats
+          </Link>
+          {canAdminMap && (
+            <Link to="/admin" className={itemClass}>
+              Admin Panel <span className="text-[9px] text-khaki">MAP + RCON</span>
+            </Link>
+          )}
+          {canRcon && (
+            <Link to="/rcon" className={itemClass}>
+              RCON Console <span className="text-[9px] text-rust">STAFF</span>
+            </Link>
+          )}
+          <a
+            href="/auth/logout"
+            className={itemClass + " border-t hairline text-muted-foreground hover:text-rust"}
+          >
+            Sign Out
+          </a>
+        </div>
+      </div>
     </div>
   );
-
-
 }
 
 export function ServerStatusPill() {
