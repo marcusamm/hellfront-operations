@@ -99,5 +99,6 @@ export async function saveLink(input: {
     if (error) throw error;
   } catch (err) {
     console.error("[link-store] save failed:", err);
+    throw err;
   }
 }
