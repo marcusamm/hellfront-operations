@@ -362,13 +362,26 @@ export async function hydrateDiscordFromGameIds(user: SessionUser): Promise<Sess
   if (gameIds.length === 0) return user;
 
   try {
+    const { getLinkByGameId } = await import("./link-store.server");
     const { getDiscordIdForPlayer, getLinkedAccount } = await import("./discord-link.server");
+
+    // Permanent link first — instant, and independent of CRCON.
     let discordId: string | null = null;
     for (const id of gameIds) {
-      discordId = await getDiscordIdForPlayer(id);
-      if (discordId) break;
+      const stored = await getLinkByGameId(id);
+      if (stored) {
+        discordId = stored.discordId;
+        break;
+      }
+    }
+    if (!discordId) {
+      for (const id of gameIds) {
+        discordId = await getDiscordIdForPlayer(id);
+        if (discordId) break;
+      }
     }
     if (!discordId) return user;
+
 
     const member = await fetchGuildMember(discordId).catch(() => null);
     const roleIds = member?.roles ?? [];
