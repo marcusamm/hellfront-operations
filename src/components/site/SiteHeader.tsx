@@ -152,10 +152,10 @@ export function AuthControls({
         <Link
           to="/admin"
           onClick={onNavigate}
-          title="Live Tactical Map"
+          title="Admin panel — tactical map & RCON"
           className="inline-flex items-center gap-1.5 border hairline px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-khaki transition-colors hover:border-khaki"
         >
-          Map
+          Admin
         </Link>
       )}
       {canRcon && (
