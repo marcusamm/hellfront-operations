@@ -9,7 +9,7 @@ import {
   getRequestUrl,
   getRequestProtocol,
 } from "@tanstack/react-start/server";
-import { capabilitiesFromRoleNames, type SessionUser } from "./auth-config";
+import { capabilitiesFromRoleNames, type Capability, type SessionUser } from "./auth-config";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const CDN = "https://cdn.discordapp.com";
@@ -142,7 +142,11 @@ export async function fetchIdentity(accessToken: string): Promise<DiscordIdentit
 }
 
 // --- Guild member + roles (bot token) --------------------------------------
-type GuildMember = { roles: string[]; nick: string | null } | null;
+type GuildMember = {
+  roles: string[];
+  nick: string | null;
+  user?: { username?: string; global_name?: string | null; avatar?: string | null; id?: string };
+} | null;
 
 export async function fetchGuildMember(userId: string): Promise<GuildMember> {
   const guildId = requireEnv("DISCORD_GUILD_ID");
@@ -152,9 +156,14 @@ export async function fetchGuildMember(userId: string): Promise<GuildMember> {
   });
   if (res.status === 404) return null; // user is not in the server
   if (!res.ok) throw new Error(`Failed to fetch guild member (${res.status})`);
-  const json = (await res.json()) as { roles?: string[]; nick?: string | null };
-  return { roles: json.roles ?? [], nick: json.nick ?? null };
+  const json = (await res.json()) as {
+    roles?: string[];
+    nick?: string | null;
+    user?: GuildMember extends null ? never : NonNullable<GuildMember>["user"];
+  };
+  return { roles: json.roles ?? [], nick: json.nick ?? null, user: json.user };
 }
+
 
 // Cache the guild's role-id -> role-name map for a few minutes.
 let rolesCache: { at: number; map: Map<string, string> } | null = null;
@@ -233,6 +242,68 @@ export async function buildSessionUser(accessToken: string): Promise<SessionUser
   };
 }
 
+/**
+ * Reverse account linking: members register their Steam64 / Epic id on our
+ * Discord, and CRCON stores that `discord_id` on the player record. So when
+ * someone signs in with Steam or Epic we can look the Discord account up from
+ * the game id and pull their server roles automatically — no manual linking.
+ */
+export async function hydrateDiscordFromGameIds(user: SessionUser): Promise<SessionUser> {
+  if (user.discordId) return user; // already linked
+  const gameIds = [user.steamId, user.epicId].filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  if (gameIds.length === 0) return user;
+
+  try {
+    const { getDiscordIdForPlayer, getLinkedAccount } = await import("./discord-link.server");
+    let discordId: string | null = null;
+    for (const id of gameIds) {
+      discordId = await getDiscordIdForPlayer(id);
+      if (discordId) break;
+    }
+    if (!discordId) return user;
+
+    const member = await fetchGuildMember(discordId).catch(() => null);
+    const roleIds = member?.roles ?? [];
+    const roleNames: string[] = [];
+    if (member) {
+      const roleMap = await fetchGuildRoleMap();
+      for (const id of roleIds) {
+        const name = roleMap.get(id);
+        if (name) roleNames.push(name);
+      }
+    }
+
+    // Fill in any game id the member registered but hasn't signed in with.
+    const linked = await getLinkedAccount(discordId).catch(() => null);
+
+    const discordName =
+      member?.nick || member?.user?.global_name || member?.user?.username || null;
+    const avatar = member?.user?.avatar;
+    const discordAvatar =
+      avatar && member?.user?.id ? `${CDN}/avatars/${member.user.id}/${avatar}.png?size=128` : null;
+
+    return {
+      ...user,
+      discordId,
+      username: discordName || user.username,
+      avatarUrl: user.avatarUrl ?? discordAvatar,
+      roleIds,
+      roleNames,
+      capabilities: Array.from(
+        new Set<Capability>([...capabilitiesFromRoleNames(roleNames), ...user.capabilities]),
+      ),
+      isMember: member !== null,
+      steamId: user.steamId ?? linked?.steamId ?? null,
+      epicId: user.epicId ?? linked?.eosId ?? null,
+      epicName: user.epicName ?? linked?.name ?? null,
+    };
+  } catch (err) {
+    console.error("[discord-link] reverse lookup failed:", err);
+    return user;
+  }
+}
 
 
 // --- Steam sign-in / linking ------------------------------------------------
@@ -270,8 +341,9 @@ export async function applySteamLogin(
         steamId,
         provider: "steam",
       };
-  await setSessionUser(user);
-  return user;
+  const hydrated = await hydrateDiscordFromGameIds(user);
+  await setSessionUser(hydrated);
+  return hydrated;
 }
 
 /**
@@ -305,6 +377,7 @@ export async function applyEpicLogin(
         epicName: displayName ?? null,
         provider: "epic",
       };
-  await setSessionUser(user);
-  return user;
+  const hydrated = await hydrateDiscordFromGameIds(user);
+  await setSessionUser(hydrated);
+  return hydrated;
 }
