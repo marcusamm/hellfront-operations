@@ -4,6 +4,14 @@ import { SiteHeader, MobileStickyCTA } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
 import { LiveTacticalMap } from "@/components/site/LiveTacticalMap";
+import {
+  MessageBars,
+  PlayersPanel,
+  GameStatePanel,
+  MapRotationPanel,
+  RawCommandPanel,
+} from "@/components/site/RconPanels";
+
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ context }) => {
@@ -17,7 +25,16 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type AdminTab = "live-map";
+type AdminTab = "live-map" | "gamestate" | "players" | "messages" | "rotation" | "raw";
+
+const TABS: { id: AdminTab; label: string }[] = [
+  { id: "live-map", label: "Live Tactical Map" },
+  { id: "gamestate", label: "Game State" },
+  { id: "players", label: "Players & Actions" },
+  { id: "messages", label: "Broadcast / Welcome" },
+  { id: "rotation", label: "Map Rotation" },
+  { id: "raw", label: "Raw Command" },
+];
 
 function AdminPage() {
   const [tab, setTab] = useState<AdminTab>("live-map");
@@ -36,7 +53,7 @@ function AdminPage() {
             <div>
               <h1 className="text-3xl md:text-5xl">Admin Panel</h1>
               <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                Site-wide admin tools. Use the RCON Console for player actions.
+                Live tactical map and the full RCON toolset in one place.
               </p>
             </div>
             <Link
@@ -48,9 +65,11 @@ function AdminPage() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-2">
-            <TabBtn active={tab === "live-map"} onClick={() => setTab("live-map")}>
-              Live Tactical Map
-            </TabBtn>
+            {TABS.map((t) => (
+              <TabBtn key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                {t.label}
+              </TabBtn>
+            ))}
           </div>
         </div>
       </section>
@@ -58,8 +77,14 @@ function AdminPage() {
       <section>
         <div className="mx-auto max-w-7xl px-5 py-10">
           {tab === "live-map" && <LiveMapPanel />}
+          {tab === "gamestate" && <GameStatePanel />}
+          {tab === "players" && <PlayersPanel />}
+          {tab === "messages" && <MessageBars />}
+          {tab === "rotation" && <MapRotationPanel />}
+          {tab === "raw" && <RawCommandPanel />}
         </div>
       </section>
+
 
       <SiteFooter />
       <MobileStickyCTA />
