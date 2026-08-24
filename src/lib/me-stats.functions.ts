@@ -32,16 +32,26 @@ export const getMyStats = createServerFn({ method: "GET" }).handler(async (): Pr
 
   const candidates: string[] = [];
   if (user.steamId) candidates.push(user.steamId);
-  if (!user.steamId && user.provider === "discord") {
-    const { getSteamIdForDiscordUser } = await import("./steam-link.server");
-    const linked = await getSteamIdForDiscordUser(user.id);
-    if (linked) candidates.push(linked);
+
+  // Discord sign-ins: CRCON already stores the Steam / Epic id members
+  // register when they join the Discord, so match on that first.
+  if (user.provider === "discord" || user.id.length >= 17) {
+    const { getLinkedPlayerIds } = await import("./discord-link.server");
+    const linked = await getLinkedPlayerIds(user.id).catch(() => [] as string[]);
+    for (const id of linked) if (!candidates.includes(id)) candidates.push(id);
   }
-  if (user.epicId) candidates.push(user.epicId);
+
+  if (candidates.length === 0 && user.provider === "discord") {
+    const { getSteamIdForDiscordUser } = await import("./steam-link.server");
+    const posted = await getSteamIdForDiscordUser(user.id);
+    if (posted) candidates.push(posted);
+  }
+  if (user.epicId && !candidates.includes(user.epicId)) candidates.push(user.epicId);
   if (user.epicName) {
     const byName = await findPlayerIdByName(user.epicName);
-    if (byName) candidates.push(byName);
+    if (byName && !candidates.includes(byName)) candidates.push(byName);
   }
+
 
   if (candidates.length === 0) return { status: "no_steam" };
 
