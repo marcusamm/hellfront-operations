@@ -98,7 +98,9 @@ const DENY_ROLES = ["warned", "ban appeal", "muted", "banned"];
 
 /** Compute capabilities from a list of Discord role names. */
 export function capabilitiesFromRoleNames(roleNames: string[]): Capability[] {
-  const lower = roleNames.map((n) => n.toLowerCase());
+  const lower = roleNames
+    .map((n) => n.toLowerCase())
+    .filter((n) => !DENY_ROLES.includes(n));
   const have = new Set(lower);
   const caps = new Set<Capability>();
   for (const { role, grants } of ROLE_CAPABILITIES) {
