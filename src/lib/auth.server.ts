@@ -9,7 +9,7 @@ import {
   getRequestUrl,
   getRequestProtocol,
 } from "@tanstack/react-start/server";
-import { capabilitiesFromRoleNames, type SessionUser } from "./auth-config";
+import { capabilitiesFromRoleNames, type Capability, type SessionUser } from "./auth-config";
 
 const DISCORD_API = "https://discord.com/api/v10";
 const CDN = "https://cdn.discordapp.com";
@@ -291,7 +291,9 @@ export async function hydrateDiscordFromGameIds(user: SessionUser): Promise<Sess
       avatarUrl: user.avatarUrl ?? discordAvatar,
       roleIds,
       roleNames,
-      capabilities: capabilitiesFromRoleNames(roleNames),
+      capabilities: Array.from(
+        new Set<Capability>([...capabilitiesFromRoleNames(roleNames), ...user.capabilities]),
+      ),
       isMember: member !== null,
       steamId: user.steamId ?? linked?.steamId ?? null,
       epicId: user.epicId ?? linked?.eosId ?? null,
@@ -339,8 +341,9 @@ export async function applySteamLogin(
         steamId,
         provider: "steam",
       };
-  await setSessionUser(user);
-  return user;
+  const hydrated = await hydrateDiscordFromGameIds(user);
+  await setSessionUser(hydrated);
+  return hydrated;
 }
 
 /**
@@ -374,6 +377,7 @@ export async function applyEpicLogin(
         epicName: displayName ?? null,
         provider: "epic",
       };
-  await setSessionUser(user);
-  return user;
+  const hydrated = await hydrateDiscordFromGameIds(user);
+  await setSessionUser(hydrated);
+  return hydrated;
 }
