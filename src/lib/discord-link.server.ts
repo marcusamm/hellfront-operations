@@ -43,6 +43,9 @@ type HistoryPlayer = {
 };
 
 const index = new Map<string, LinkedAccount>();
+/** Reverse index: game account id (player id / Steam64 / EOS) -> discord id. */
+const reverse = new Map<string, string>();
+
 let totalPlayers = 0;
 let pagesScanned = 0;
 let fullScanAt = 0;
