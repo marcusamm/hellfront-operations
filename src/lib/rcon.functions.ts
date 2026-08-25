@@ -36,6 +36,14 @@ async function requireRcon(): Promise<string | null> {
   return null;
 }
 
+/** Who is performing the action — used for the admin action log. */
+async function actor(): Promise<{ key: string; name: string } | null> {
+  const { getSessionUser } = await import("./auth.server");
+  const u = await getSessionUser();
+  if (!u) return null;
+  return { key: u.discordId ?? u.id, name: u.username };
+}
+
 function pickN(o: Record<string, unknown>, ...keys: string[]): number {
   for (const k of keys) {
     const v = o[k];
@@ -114,7 +122,28 @@ async function runAction(path: string, body: Record<string, unknown>): Promise<R
     | null;
   if (!res) return { ok: false, message: "CRCON did not respond" };
   if (res.failed) return { ok: false, message: String(res.error ?? "CRCON refused") };
+  await audit(path, body);
   return { ok: true, message: "Done" };
+}
+
+/** Write a successful action to the admin action log. Never blocks the action. */
+async function audit(path: string, body: Record<string, unknown>) {
+  try {
+    const me = await actor();
+    if (!me) return;
+    const { logAdminAction } = await import("./audit.server");
+    const { player_name, player_id, ...rest } = body;
+    await logAdminAction({
+      actorKey: me.key,
+      actorName: me.name,
+      action: path.replace("/api/", ""),
+      targetPlayer: typeof player_name === "string" ? player_name : null,
+      targetId: typeof player_id === "string" ? player_id : null,
+      details: rest,
+    });
+  } catch {
+    /* logging must never break an admin action */
+  }
 }
 
 export const messagePlayer = createServerFn({ method: "POST" })
@@ -331,6 +360,7 @@ export const runRawCommand = createServerFn({ method: "POST" })
         (data.method ?? "GET") === "POST"
           ? await apiPost(path, data.body ?? {})
           : await apiGetRaw(path);
+      await audit("/api/raw_command", { command_path: path, method: data.method ?? "GET" });
       return { ok: true, message: "ok", data: JSON.stringify(res, null, 2) };
     } catch (err) {
       return { ok: false, message: (err as Error).message };

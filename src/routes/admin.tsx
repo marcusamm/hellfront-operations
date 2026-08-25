@@ -11,6 +11,11 @@ import {
   MapRotationPanel,
   RawCommandPanel,
 } from "@/components/site/RconPanels";
+import {
+  SeederPanel,
+  TicketsPanel,
+  ActionLogPanel,
+} from "@/components/site/AdminExtraPanels";
 
 
 export const Route = createFileRoute("/admin")({
@@ -25,7 +30,16 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type AdminTab = "live-map" | "gamestate" | "players" | "messages" | "rotation" | "raw";
+type AdminTab =
+  | "live-map"
+  | "gamestate"
+  | "players"
+  | "messages"
+  | "rotation"
+  | "seeder"
+  | "tickets"
+  | "log"
+  | "raw";
 
 const TABS: { id: AdminTab; label: string }[] = [
   { id: "live-map", label: "Live Tactical Map" },
@@ -33,6 +47,9 @@ const TABS: { id: AdminTab; label: string }[] = [
   { id: "players", label: "Players & Actions" },
   { id: "messages", label: "Broadcast / Welcome" },
   { id: "rotation", label: "Map Rotation" },
+  { id: "seeder", label: "Seeder Bots" },
+  { id: "tickets", label: "Support Tickets" },
+  { id: "log", label: "Action Log" },
   { id: "raw", label: "Raw Command" },
 ];
 
@@ -81,6 +98,9 @@ function AdminPage() {
           {tab === "players" && <PlayersPanel />}
           {tab === "messages" && <MessageBars />}
           {tab === "rotation" && <MapRotationPanel />}
+          {tab === "seeder" && <SeederPanel />}
+          {tab === "tickets" && <TicketsPanel />}
+          {tab === "log" && <ActionLogPanel />}
           {tab === "raw" && <RawCommandPanel />}
         </div>
       </section>
