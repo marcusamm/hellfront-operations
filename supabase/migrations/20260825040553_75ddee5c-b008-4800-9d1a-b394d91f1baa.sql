@@ -1,0 +1,1 @@
+CREATE POLICY "service role manages account links" ON public.account_links FOR ALL TO service_role USING (true) WITH CHECK (true);
