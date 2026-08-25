@@ -16,6 +16,7 @@ import {
   TicketsPanel,
   ActionLogPanel,
 } from "@/components/site/AdminExtraPanels";
+import { RoleManagerPanel } from "@/components/site/RoleManagerPanel";
 
 
 export const Route = createFileRoute("/admin")({
@@ -36,6 +37,7 @@ type AdminTab =
   | "players"
   | "messages"
   | "rotation"
+  | "roles"
   | "seeder"
   | "tickets"
   | "log"
@@ -47,6 +49,7 @@ const TABS: { id: AdminTab; label: string }[] = [
   { id: "players", label: "Players & Actions" },
   { id: "messages", label: "Broadcast / Welcome" },
   { id: "rotation", label: "Map Rotation" },
+  { id: "roles", label: "Members & Roles" },
   { id: "seeder", label: "Seeder Bots" },
   { id: "tickets", label: "Support Tickets" },
   { id: "log", label: "Action Log" },
@@ -98,6 +101,7 @@ function AdminPage() {
           {tab === "players" && <PlayersPanel />}
           {tab === "messages" && <MessageBars />}
           {tab === "rotation" && <MapRotationPanel />}
+          {tab === "roles" && <RoleManagerPanel />}
           {tab === "seeder" && <SeederPanel />}
           {tab === "tickets" && <TicketsPanel />}
           {tab === "log" && <ActionLogPanel />}
