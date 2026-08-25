@@ -3,6 +3,7 @@ import { SiteHeader, MobileStickyCTA } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions, useAuth } from "@/lib/auth-client";
 import { MyStatsPanel } from "@/components/site/MyStatsPanel";
+import { SupportTickets } from "@/components/site/SupportTickets";
 
 export const Route = createFileRoute("/members")({
   beforeLoad: async ({ context }) => {
@@ -123,6 +124,16 @@ function MembersPage() {
             )}
           </div>
           <MyStatsPanel />
+        </div>
+      </section>
+
+      <section id="support" className="border-b hairline scroll-mt-24">
+        <div className="mx-auto max-w-7xl px-5 py-12">
+          <div className="mb-6 flex items-center gap-3">
+            <span className="stencil text-xs text-khaki/70">00</span>
+            <h2 className="text-2xl text-foreground md:text-3xl">Support</h2>
+          </div>
+          <SupportTickets />
         </div>
       </section>
 
