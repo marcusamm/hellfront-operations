@@ -55,7 +55,7 @@ export async function logAdminAction(entry: {
       target_player: entry.targetPlayer ?? null,
       target_id: entry.targetId ?? null,
       server_label: entry.serverLabel ?? null,
-      details: entry.details ?? {},
+      details: (entry.details ?? {}) as never,
     });
   } catch (err) {
     console.error("[audit] log failed:", err);
@@ -159,10 +159,14 @@ export async function updateTicket(input: {
 }): Promise<boolean> {
   try {
     const db = await admin();
-    const patch: Record<string, unknown> = {};
-    if (input.status) patch["status"] = input.status;
-    if (input.staffReply !== undefined) patch["staff_reply"] = input.staffReply;
-    if (input.handledBy !== undefined) patch["handled_by"] = input.handledBy;
+    const patch: {
+      status?: string;
+      staff_reply?: string | null;
+      handled_by?: string | null;
+    } = {};
+    if (input.status) patch.status = input.status;
+    if (input.staffReply !== undefined) patch.staff_reply = input.staffReply;
+    if (input.handledBy !== undefined) patch.handled_by = input.handledBy;
     const { error } = await db.from("support_tickets").update(patch).eq("id", input.id);
     if (error) throw error;
     return true;
