@@ -80,6 +80,69 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          discord_id: string | null
+          discord_username: string | null
+          display_name: string
+          epic_id: string | null
+          epic_name: string | null
+          steam_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          discord_id?: string | null
+          discord_username?: string | null
+          display_name: string
+          epic_id?: string | null
+          epic_name?: string | null
+          steam_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          discord_id?: string | null
+          discord_username?: string | null
+          display_name?: string
+          epic_id?: string | null
+          epic_name?: string | null
+          steam_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      site_roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          grants: string[]
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          grants?: string[]
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          grants?: string[]
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           category: string
@@ -128,12 +191,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_fkey"
+            columns: ["role"]
+            isOneToOne: false
+            referencedRelation: "site_roles"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_site_role: {
+        Args: { _role: string; _user_id: string }
+        Returns: boolean
+      }
+      is_site_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
