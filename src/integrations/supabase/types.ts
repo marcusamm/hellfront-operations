@@ -44,6 +44,90 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_action_log: {
+        Row: {
+          action: string
+          actor_key: string
+          actor_name: string | null
+          created_at: string
+          details: Json
+          id: string
+          server_label: string | null
+          target_id: string | null
+          target_player: string | null
+        }
+        Insert: {
+          action: string
+          actor_key: string
+          actor_name?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          server_label?: string | null
+          target_id?: string | null
+          target_player?: string | null
+        }
+        Update: {
+          action?: string
+          actor_key?: string
+          actor_name?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          server_label?: string | null
+          target_id?: string | null
+          target_player?: string | null
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          category: string
+          created_at: string
+          discord_id: string | null
+          handled_by: string | null
+          id: string
+          message: string
+          requester_key: string
+          requester_name: string | null
+          staff_reply: string | null
+          status: string
+          steam_id: string | null
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          discord_id?: string | null
+          handled_by?: string | null
+          id?: string
+          message: string
+          requester_key: string
+          requester_name?: string | null
+          staff_reply?: string | null
+          status?: string
+          steam_id?: string | null
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          discord_id?: string | null
+          handled_by?: string | null
+          id?: string
+          message?: string
+          requester_key?: string
+          requester_name?: string | null
+          staff_reply?: string | null
+          status?: string
+          steam_id?: string | null
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
