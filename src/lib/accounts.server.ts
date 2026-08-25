@@ -174,14 +174,22 @@ export async function saveProfileLinks(
   },
 ): Promise<void> {
   const db = await admin();
-  const row: Record<string, string | null> = {};
-  if (patch.steamId !== undefined) row["steam_id"] = patch.steamId;
-  if (patch.epicId !== undefined) row["epic_id"] = patch.epicId;
-  if (patch.epicName !== undefined) row["epic_name"] = patch.epicName;
-  if (patch.discordId !== undefined) row["discord_id"] = patch.discordId;
-  if (patch.discordUsername !== undefined) row["discord_username"] = patch.discordUsername;
-  if (patch.avatarUrl !== undefined) row["avatar_url"] = patch.avatarUrl;
-  if (patch.displayName) row["display_name"] = patch.displayName;
+  const row: {
+    steam_id?: string | null;
+    epic_id?: string | null;
+    epic_name?: string | null;
+    discord_id?: string | null;
+    discord_username?: string | null;
+    avatar_url?: string | null;
+    display_name?: string;
+  } = {};
+  if (patch.steamId !== undefined) row.steam_id = patch.steamId;
+  if (patch.epicId !== undefined) row.epic_id = patch.epicId;
+  if (patch.epicName !== undefined) row.epic_name = patch.epicName;
+  if (patch.discordId !== undefined) row.discord_id = patch.discordId;
+  if (patch.discordUsername !== undefined) row.discord_username = patch.discordUsername;
+  if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
+  if (patch.displayName) row.display_name = patch.displayName;
   if (Object.keys(row).length === 0) return;
   const { error } = await db.from("profiles").update(row).eq("user_id", userId);
   if (error) throw error;

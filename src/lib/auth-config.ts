@@ -49,7 +49,11 @@ export type SessionUser = {
   /** Epic display name, used to match the player in the game archive. */
   epicName?: string | null;
   /** Which provider created this session. */
-  provider?: "discord" | "steam" | "epic";
+  provider?: "discord" | "steam" | "epic" | "site";
+  /** Website account id (Supabase auth user), when signed in with an account. */
+  authUserId?: string | null;
+  /** Account e-mail, for website accounts. */
+  email?: string | null;
 };
 
 // ---------------------------------------------------------------------------
