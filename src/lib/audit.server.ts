@@ -12,7 +12,7 @@ export type AdminActionRow = {
   targetPlayer: string | null;
   targetId: string | null;
   serverLabel: string | null;
-  details: Record<string, unknown>;
+  details: string;
   createdAt: string;
 };
 
@@ -78,7 +78,7 @@ export async function listAdminActions(limit = 100): Promise<AdminActionRow[]> {
       targetPlayer: (r.target_player as string | null) ?? null,
       targetId: (r.target_id as string | null) ?? null,
       serverLabel: (r.server_label as string | null) ?? null,
-      details: (r.details as Record<string, unknown>) ?? {},
+      details: JSON.stringify(r.details ?? {}),
       createdAt: r.created_at as string,
     }));
   } catch (err) {
