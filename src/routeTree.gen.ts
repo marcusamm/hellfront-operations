@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VietnamRouteImport } from './routes/vietnam'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SlbRouteImport } from './routes/slb'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RconRouteImport } from './routes/rcon'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as LoginRouteImport } from './routes/login'
@@ -38,6 +39,11 @@ const StatsRoute = StatsRouteImport.update({
 const SlbRoute = SlbRouteImport.update({
   id: '/slb',
   path: '/slb',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RconRoute = RconRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
   '/rcon': typeof RconRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/vietnam': typeof VietnamRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
   '/rcon': typeof RconRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/vietnam': typeof VietnamRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/members': typeof MembersRoute
   '/rcon': typeof RconRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/slb': typeof SlbRoute
   '/stats': typeof StatsRoute
   '/vietnam': typeof VietnamRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/members'
     | '/rcon'
+    | '/reset-password'
     | '/slb'
     | '/stats'
     | '/vietnam'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/members'
     | '/rcon'
+    | '/reset-password'
     | '/slb'
     | '/stats'
     | '/vietnam'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/members'
     | '/rcon'
+    | '/reset-password'
     | '/slb'
     | '/stats'
     | '/vietnam'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MembersRoute: typeof MembersRoute
   RconRoute: typeof RconRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SlbRoute: typeof SlbRoute
   StatsRoute: typeof StatsRoute
   VietnamRoute: typeof VietnamRoute
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/slb'
       fullPath: '/slb'
       preLoaderRoute: typeof SlbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rcon': {
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MembersRoute: MembersRoute,
   RconRoute: RconRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SlbRoute: SlbRoute,
   StatsRoute: StatsRoute,
   VietnamRoute: VietnamRoute,

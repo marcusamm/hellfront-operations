@@ -1,9 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { SiteHeader, MobileStickyCTA, DiscordIcon } from "@/components/site/SiteHeader";
+import { SiteHeader, MobileStickyCTA } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { currentUserQueryOptions } from "@/lib/auth-client";
-import { SteamIcon } from "@/components/site/SteamIcon";
-import { EpicIcon } from "@/components/site/EpicIcon";
+import { AccountAuthForms } from "@/components/site/AccountAuthForms";
 
 type LoginSearch = { error?: string };
 
@@ -32,7 +31,8 @@ export const Route = createFileRoute("/login")({
       { title: "Sign In — Objective First" },
       {
         name: "description",
-        content: "Sign in with Discord to access the Objective First members area.",
+        content:
+          "Sign in or create an Objective First account to access the members area, stats and staff tools.",
       },
     ],
   }),
@@ -56,8 +56,9 @@ function LoginPage() {
             Sign in to <span className="text-khaki">command</span>
           </h1>
           <p className="mt-5 text-muted-foreground">
-            Authenticate with Discord for member access, or sign in with Steam to pull up your own
-            performance stats from our servers.
+            Objective First accounts are managed here on the site. Create one with your e-mail,
+            confirm it, and your roles are assigned by our admins. You can link Steam, Epic and
+            Discord to your account afterwards to pull up your own performance stats.
           </p>
 
           {error && (
@@ -66,32 +67,9 @@ function LoginPage() {
             </div>
           )}
 
-          <a
-            href="/auth/discord/login"
-            className="mt-8 inline-flex items-center justify-center gap-3 border-2 border-khaki bg-khaki px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-background transition-all hover:bg-transparent hover:text-khaki"
-          >
-            <DiscordIcon className="h-4 w-4" />
-            Sign in with Discord
-          </a>
-
-          <a
-            href="/auth/steam/login?next=/members%23my-stats"
-            className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
-          >
-            <SteamIcon className="h-4 w-4" />
-            Sign in with Steam
-          </a>
-
-          <a
-            href="/auth/epic/login?next=/members%23my-stats"
-            className="mt-4 inline-flex items-center justify-center gap-3 border-2 border-khaki/50 px-7 py-4 font-mono text-xs font-bold uppercase tracking-[0.25em] text-khaki transition-all hover:border-khaki hover:bg-khaki/10"
-          >
-            <EpicIcon className="h-4 w-4" />
-            Sign in with Epic Games
-          </a>
-          <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Steam / Epic sign-in is for personal stats · Discord roles unlock member areas
-          </p>
+          <div className="mt-8">
+            <AccountAuthForms />
+          </div>
 
           <div className="mt-12 border hairline bg-card/60 p-6">
             <div className="flex items-center justify-between border-b hairline pb-3">
@@ -113,7 +91,7 @@ function LoginPage() {
               </li>
             </ul>
             <div className="mt-6 border-t hairline pt-4 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Not in the server yet? Join Discord first, then sign in.
+              New accounts start with no clearance — an admin assigns your role.
             </div>
           </div>
         </div>
